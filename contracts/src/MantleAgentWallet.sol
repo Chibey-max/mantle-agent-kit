@@ -24,9 +24,6 @@ contract MantleAgentWallet is Ownable, ReentrancyGuard {
     address public constant METH_TOKEN = 0xcDA86A272531e8640cD7F1a92c01839911B90bb0;
     address public constant USDY_TOKEN = 0x5be26527e817998A7206475496fDe1E68957C5A9;
 
-    // ─── Chain ─────────────────────────────────────────────────────────────────
-    uint256 public constant CHAIN_ID = 5000;
-
     // ─── Identity ──────────────────────────────────────────────────────────────
     IAgentIdentity public identityContract;
 
@@ -100,11 +97,6 @@ contract MantleAgentWallet is Ownable, ReentrancyGuard {
 
     modifier notPaused() {
         require(!paused, "MantleAgentWallet: wallet is paused");
-        _;
-    }
-
-    modifier onlyMantle() {
-        require(block.chainid == CHAIN_ID, "MantleAgentWallet: wrong chain");
         _;
     }
 
@@ -279,7 +271,8 @@ contract MantleAgentWallet is Ownable, ReentrancyGuard {
         address token,
         uint256 perTxLimit,
         uint256 dailyLimit
-    ) external onlyOwner {
+    ) external {
+        require(msg.sender == owner() || msg.sender == address(this), "MantleAgentWallet: not authorized");
         tokenPolicies[token].perTxLimit = perTxLimit;
         tokenPolicies[token].dailyLimit = dailyLimit;
         tokenPolicies[token].enabled = true;

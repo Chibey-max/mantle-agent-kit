@@ -87,6 +87,7 @@ contract TradingVault is Ownable, ReentrancyGuard {
     event TradingResumed(address indexed by);
     event DailyPnlUpdated(int256 pnl);
     event AgentUpdated(address indexed oldAgent, address indexed newAgent);
+    event EmergencyWithdraw(address indexed to, address indexed token, uint256 amount);
 
     // ─── Modifiers ─────────────────────────────────────────────────────────────
     modifier onlyAgent() {
@@ -139,7 +140,8 @@ contract TradingVault is Ownable, ReentrancyGuard {
 
     // ─── Withdrawals ───────────────────────────────────────────────────────────
     function withdrawMNT(uint256 amount) external nonReentrant {
-        require(mntDeposits[msg.sender] >= amount, "TradingVault: insufficient MNT balance");
+        require(mntDeposits[msg.sender] >= amount, "TradingVault: insufficient depositor balance");
+        require(address(this).balance >= amount, "TradingVault: vault balance depleted by strategies");
         mntDeposits[msg.sender] -= amount;
         totalMntDeposited -= amount;
         (bool success,) = payable(msg.sender).call{value: amount}("");
@@ -148,11 +150,23 @@ contract TradingVault is Ownable, ReentrancyGuard {
     }
 
     function withdrawMETH(uint256 amount) external nonReentrant {
-        require(methDeposits[msg.sender] >= amount, "TradingVault: insufficient mETH balance");
+        require(methDeposits[msg.sender] >= amount, "TradingVault: insufficient depositor balance");
+        require(IERC20(METH_TOKEN).balanceOf(address(this)) >= amount, "TradingVault: vault balance depleted by strategies");
         methDeposits[msg.sender] -= amount;
         totalMethDeposited -= amount;
         IERC20(METH_TOKEN).safeTransfer(msg.sender, amount);
         emit Withdrawn(msg.sender, METH_TOKEN, amount);
+    }
+
+    function emergencyWithdraw(address token, address to, uint256 amount) external onlyOwner {
+        require(to != address(0), "TradingVault: zero address");
+        if (token == MNT_NATIVE) {
+            (bool success,) = payable(to).call{value: amount}("");
+            require(success, "TradingVault: MNT withdraw failed");
+        } else {
+            IERC20(token).safeTransfer(to, amount);
+        }
+        emit EmergencyWithdraw(to, token, amount);
     }
 
     // ─── Strategy Execution ────────────────────────────────────────────────────
@@ -169,9 +183,10 @@ contract TradingVault is Ownable, ReentrancyGuard {
         bytes calldata data,
         uint256 amount,
         string calldata strategyName
-    ) external onlyAgent tradingActive nonReentrant returns (bytes memory) {
+    ) external onlyAgent nonReentrant returns (bytes memory) {
         require(target != address(0), "TradingVault: zero target");
-        _checkDailyReset();
+        _checkDailyReset(); // reset day window first — may auto-resume if halted by yesterday's loss
+        require(!tradingHalted, "TradingVault: trading is halted");
 
         (bool success, bytes memory returnData) = target.call{value: amount}(data);
 

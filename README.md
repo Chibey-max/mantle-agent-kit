@@ -1,196 +1,213 @@
-# Mantle Agent Kit — Agentic Wallet Economy
+# Mantle Agent Kit
 
-> **The first verifiable AI agent wallet economy on Mantle — autonomous, policy-enforced, ERC-8004 identity-native.**
+> The first verifiable AI agent wallet economy on Mantle — autonomous, policy-enforced, ERC-8004 identity-native, Bybit-powered.
 
-**Hackathon:** Mantle Turing Test Hackathon 2026  
-**Tracks:** Agentic Wallets & Economy (primary) · AI Trading & Strategy (secondary) · Best UI/UX  
-**Prize Pool:** $120,000  
+[![Track 01: AI Trading](https://img.shields.io/badge/Track%2001-AI%20Trading%20%26%20Strategy-00d4aa)](https://hackathon.mantle.xyz)
+[![Track 06: Agentic Economy](https://img.shields.io/badge/Track%2006-Agentic%20Economy-00d4aa)](https://hackathon.mantle.xyz)
+[![Deployed on Mantle Sepolia](https://img.shields.io/badge/Deployed-Mantle%20Sepolia-0a0a0a)](https://explorer.sepolia.mantle.xyz)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+**[Live Dashboard](#)** | **[Demo Video](#)** | **[Mantle Sepolia Explorer](https://explorer.sepolia.mantle.xyz)**
 
 ---
 
-## One-Liner
+## Contract Addresses — Mantle Sepolia (Chain ID: 5003)
 
-An AI agent that autonomously manages a Mantle smart wallet — enforcing spending policies, executing quant trading strategies, staking for yield, and recording every decision on-chain via ERC-8004 identity NFTs — all visible through a stunning real-time dashboard.
+| Contract | Address | Explorer |
+|---|---|---|
+| AgentIdentity (ERC-8004) | `0x0de937c8def5284F8e2F0E2546a891EFe67909cb` | [View](https://explorer.sepolia.mantle.xyz/address/0x0de937c8def5284F8e2F0E2546a891EFe67909cb) |
+| MantleAgentWallet | `0x8DD23aBBA62f10306805F0B2C8BF8459d1C3974e` | [View](https://explorer.sepolia.mantle.xyz/address/0x8DD23aBBA62f10306805F0B2C8BF8459d1C3974e) |
+| TradingVault | `0xaC81145B380df6E8BEA7D58b56ED70d325164C94` | [View](https://explorer.sepolia.mantle.xyz/address/0xaC81145B380df6E8BEA7D58b56ED70d325164C94) |
+
+---
+
+## The Problem
+
+AI agents operating on-chain today are black boxes: no identity, no verifiable track record, no enforceable spending policy. They borrow human wallets with no guardrails and leave no audit trail. You cannot hold them accountable.
+
+## The Solution
+
+Mantle Agent Kit gives every AI agent a full on-chain identity stack:
+
+- A **soulbound ERC-8004 identity NFT** that grows reputation with each on-chain action
+- A **policy-enforced smart wallet** with per-tx limits, daily limits, address whitelist, guardian controls, and a 2-day timelock on policy changes
+- A **verifiable on-chain audit trail** of every agent decision — immutable, indexable, judge-readable
+- A **quant trading engine** powered by Bybit API v5 with RSI(14) + EMA(9/21) signals and Kelly criterion position sizing
+- A **real-time dashboard** that visualizes every agent action live
 
 ---
 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                       Mantle Agent Kit                              │
-│                                                                     │
-│  ┌─────────────────┐    ┌─────────────────┐    ┌────────────────┐  │
-│  │   Dashboard     │    │   Agent (MCP)   │    │  Contracts     │  │
-│  │   Next.js 14    │◄──►│   TypeScript    │◄──►│   Solidity     │  │
-│  │   Tailwind CSS  │    │   Groq/OpenAI   │    │   Foundry      │  │
-│  │   Framer Motion │    │   viem          │    │   Mantle L2    │  │
-│  └─────────────────┘    └─────────────────┘    └────────────────┘  │
-│           │                      │                      │           │
-│           │              ┌───────┴───────┐              │           │
-│           │              │   Skills      │              │           │
-│           │              │   Transfer    │              │           │
-│           │              │   Swap Agni   │              │           │
-│           │              │   Swap Moe    │              │           │
-│           │              │   Stake mETH  │              │           │
-│           │              │   Trade       │              │           │
-│           └──────────────┴───────────────┴──────────────┘           │
-│                                                                     │
-│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────────────┐  │
-│  │ AgentIdentity│  │MantleAgent   │  │     TradingVault         │  │
-│  │  ERC-8004    │  │   Wallet     │  │  RSI+EMA · Risk Mgmt     │  │
-│  │  On-chain    │  │  Limits+     │  │  Daily Loss Limit        │  │
-│  │  Audit Trail │  │  Guardian+   │  │  Position Tracking       │  │
-│  │              │  │  Whitelist+  │  │  Strategy Execution      │  │
-│  │              │  │  Timelock    │  │                          │  │
-│  └──────────────┘  └──────────────┘  └──────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────┘
-
-                         Mantle Network (Chain ID: 5000)
-                    MNT · mETH (Mantle LSP) · USDY · Low Gas
+┌────────────────────────────────────────────────────────────────┐
+│                       Mantle Agent Kit                         │
+│                                                                │
+│  ┌──────────────┐    ┌─────────────────┐    ┌──────────────┐  │
+│  │  Dashboard   │    │   Agent (MCP)   │    │  Contracts   │  │
+│  │  Next.js 14  │◄──►│  TypeScript     │◄──►│  Solidity    │  │
+│  │  Tailwind    │    │  Groq LLM       │    │  Foundry     │  │
+│  │  Recharts    │    │  viem           │    │  Mantle L2   │  │
+│  └──────────────┘    └─────────────────┘    └──────────────┘  │
+│                              │                                 │
+│                    ┌─────────┴──────────┐                      │
+│                    │  Skills (MCP)      │                      │
+│                    │  transfer-mnt      │                      │
+│                    │  swap-agni         │                      │
+│                    │  swap-merchant-moe │                      │
+│                    │  stake-meth        │                      │
+│                    │  execute-trade     │                      │
+│                    └────────────────────┘                      │
+└────────────────────────────────────────────────────────────────┘
+                    Mantle Network (Chain ID: 5003)
+               MNT · mETH (Mantle LSP) · USDY · Low Gas
 ```
 
 ---
 
-## Features
+## What Was Built
 
-### Agentic Wallet & Economy
-- **MantleAgentWallet** — Policy-enforced smart wallet with spending limits (per-tx + daily), guardian controls, address whitelist, and 2-day timelock for limit changes
-- **ERC-8004 On-Chain Identity** — Every agent has a soulbound NFT that logs its decisions on-chain. Reputation grows with successful actions.
-- **Multi-token support** — Native MNT, mETH (Mantle LSP), USDY with independent policies
-- **Guardian system** — Emergency pause/unpause with guardian role separate from owner
-- **executeWithIdentity()** — Atomic execution + on-chain action recording in one call
+### Track 06 — Agentic Economy
 
-### AI Trading & Strategy
-- **Bybit market data integration** — Real-time ticker, klines, orderbook via API v5
-- **Quant strategy engine** — RSI(14) + EMA(9/21) crossover signals with confidence scoring
-- **Risk manager** — Position sizing (10% max), daily loss limit (5%), Kelly criterion sizing
-- **TradingVault** — On-chain vault for strategy execution with daily loss halt
-- **Full trading cycle** — Bybit data → signal analysis → risk check → on-chain execution
+**`MantleAgentWallet.sol`**
+- Per-transaction and daily spending limits enforced at contract level
+- Address whitelist — agent can only interact with pre-approved contracts
+- Guardian role — independent address that can emergency pause at any time
+- 2-day timelock for all policy changes (owner schedules, executes after delay)
+- `executeWithIdentity()` — atomic execution + on-chain action recording in a single call
+- Multi-token policies: native MNT, mETH, USDY with independent limits
 
-### Best UI/UX (Dashboard)
-- **Design language: "Mantle Dark Pro"** — Deep dark bg, Mantle green (#00d4aa) accents, glassmorphism panels
-- **10 interactive panels** — Overview, Trading, Identity, Skills, Yield, Audit Trail, Guardian, Chat
-- **Framer Motion animations** — Smooth panel mounts, chart transitions, live data pulses
-- **Agent Chat Terminal** — Real-time chat with tool call visualization
-- **Mini sparklines** — On every stat card
-- **Recharts integration** — Live candlestick charts, RSI gauge, yield area charts
-- **Skill execution modals** — Execute any skill directly from the dashboard
+**`AgentIdentity.sol`** (ERC-8004)
+- Soulbound NFT — transfers blocked for all callers except contract owner (recovery only)
+- Approvals fully disabled — `approve()` and `setApprovalForAll()` revert
+- On-chain audit trail: up to 100 actions logged per agent (ring buffer)
+- Reputation score grows +1 per successful action, capped at 1000
+- On-chain SVG metadata — rendered directly in the NFT, no IPFS dependency
+- Owner can slash or reward reputation directly
+
+**Agent MCP Server**
+- Groq LLM primary → OpenRouter fallback → Google Gemini tertiary
+- MCP-compatible skill server — works with Cursor, Claude Desktop, Kiro
+- Skills: MNT transfer, Agni Finance swap, Merchant Moe V2.1 swap, mETH staking
+- Every action recorded on-chain via `executeWithIdentity()`
+
+### Track 01 — AI Trading & Strategy
+
+**`TradingVault.sol`**
+- Depositor-tracked vault for MNT and mETH
+- Strategy execution log — every call recorded on-chain
+- Position tracking: open/close with entry price, size, direction, strategy name
+- Daily loss limit halt — trading stops automatically if losses exceed threshold (default 5%)
+- Auto-resumes on new day (loss limit resets)
+- Owner emergency withdrawal
+
+**Quant Strategy Engine**
+- Bybit API v5 integration: real-time ticker, klines (OHLCV), orderbook depth
+- RSI(14) signal: oversold (<30 = buy) / overbought (>70 = sell)
+- EMA(9) / EMA(21) crossover confirmation
+- Confidence scoring + signal classification
+- Kelly criterion position sizing
+- Risk manager: 10% max position size, 5% daily loss limit
+
+---
+
+## Security
+
+All contracts audited and hardened:
+
+| Check | Status |
+|---|---|
+| Reentrancy (ReentrancyGuard on all external calls) | Secured |
+| Checks-effects-interactions on all transfers | Secured |
+| Spending limits enforced before external call | Secured |
+| Soulbound: transfer blocked, approvals disabled | Secured |
+| Guardian cannot escalate to owner privileges | Secured |
+| Zero address validation in all constructors | Secured |
+| Timelock on policy changes (2 days) | Secured |
+| Vault balance checked against actual balance, not just accounting | Secured |
+| Events emitted for all state changes | Secured |
+| No tx.origin usage | Secured |
+
+```bash
+# Run full test suite (69 tests, 0 failures)
+cd contracts && forge test -vv
+```
 
 ---
 
 ## Tech Stack
 
 | Layer | Technology |
-|-------|------------|
-| **Contracts** | Solidity ^0.8.20, Foundry, OpenZeppelin |
-| **Chain** | Mantle Mainnet (Chain ID: 5000) |
-| **Agent** | TypeScript, viem, MCP SDK |
-| **LLM** | Groq (primary) → OpenRouter → Google Gemini |
-| **Market Data** | Bybit API v5 |
-| **Dashboard** | Next.js 14, Tailwind CSS, Framer Motion, Recharts |
-| **DeFi** | Merchant Moe (Joe V2.1), Agni Finance, Mantle LSP |
+|---|---|
+| Contracts | Solidity ^0.8.20, Foundry, OpenZeppelin v5 |
+| Chain | Mantle Sepolia (Chain ID: 5003) |
+| Agent | TypeScript, viem, MCP SDK |
+| LLM | Groq (primary) → OpenRouter → Google Gemini |
+| Market Data | Bybit API v5 |
+| Dashboard | Next.js 14, Tailwind CSS, Framer Motion, Recharts |
+| DeFi Integrations | Merchant Moe (Joe V2.1), Agni Finance, Mantle LSP |
 
 ---
 
 ## Quick Start
 
-### Prerequisites
-- Foundry (`curl -L https://foundry.paradigm.xyz | bash`)
-- Node.js 20+
-- A funded Mantle wallet
-
 ### 1. Deploy Contracts
 
 ```bash
-cd mantle/contracts
+cd contracts
 
 # Install dependencies
+forge install foundry-rs/forge-std
 forge install OpenZeppelin/openzeppelin-contracts
 
-# Copy environment
+# Configure environment
 cp .env.example .env
-# Fill in PRIVATE_KEY, and optionally AGENT_ADDRESS, GUARDIAN_ADDRESS
+# Fill in: PRIVATE_KEY
 
-# Deploy to Mantle
+# Deploy to Mantle Sepolia
 forge script script/Deploy.s.sol \
-  --rpc-url https://rpc.mantle.xyz \
-  --broadcast \
-  --verify
+  --rpc-url https://rpc.sepolia.mantle.xyz \
+  --broadcast
 
-# Copy the logged addresses to agent/.env
+# Copy the logged contract addresses to agent/.env and dashboard/.env.local
 ```
+
+Get testnet MNT: https://faucet.sepolia.mantle.xyz
 
 ### 2. Run the Agent
 
 ```bash
-cd mantle/agent
-
+cd agent
 npm install
 
-# Configure environment
 cp .env.example .env
-# Fill in contract addresses and API keys
+# Fill in: AGENT_PRIVATE_KEY, GROQ_API_KEY, contract addresses
 
-# Start interactive agent
-npm run dev
-
-# Or start MCP server
-npm run mcp
+npm run dev   # interactive agent
+npm run mcp   # MCP server mode
 ```
 
 ### 3. Start the Dashboard
 
 ```bash
-cd mantle/dashboard
-
+cd dashboard
 npm install
 
-# Start dev server on port 3002
-npm run dev
+# Create .env.local with contract addresses and RPC URL
+# (see dashboard/.env.local.example)
 
-# Open http://localhost:3002
+npm run dev   # http://localhost:3002
 ```
 
 ---
 
-## Contract Addresses (Mantle Mainnet)
+## Mantle Token Addresses (Sepolia)
 
-| Contract | Address |
-|----------|---------|
-| AgentIdentity (ERC-8004) | `DEPLOY_AND_FILL` |
-| MantleAgentWallet | `DEPLOY_AND_FILL` |
-| TradingVault | `DEPLOY_AND_FILL` |
-
----
-
-## Mantle Token Addresses
-
-| Token | Address | Description |
-|-------|---------|-------------|
-| MNT | Native | Mantle native token (gas + transfers) |
-| mETH | `0xcDA86A272531e8640cD7F1a92c01839911B90bb0` | Mantle Liquid Staking (~4.5% APY) |
-| USDY | `0x5bE26527e817998A7206475496fDE1E68957c5A9` | Yield-bearing stablecoin |
-
----
-
-## Security
-
-- **Spending limits** enforced at contract level — agent cannot exceed per-tx or daily limits
-- **Whitelist** — agent can only send to pre-approved addresses
-- **Guardian role** — independent address can emergency pause at any time
-- **Timelock** — 2-day delay on all limit changes
-- **Non-transferable identity** — ERC-8004 NFTs are bound to the agent address
-- **ReentrancyGuard** on all state-changing functions
-- **Chain ID check** — contracts verify Mantle mainnet (5000)
-
----
-
-## Team
-
-Built for the Mantle Turing Test Hackathon 2026.
-
-> "We didn't just build an agentic wallet. We built an economy." 
+| Token | Address |
+|---|---|
+| MNT | Native |
+| mETH | `0xcDA86A272531e8640cD7F1a92c01839911B90bb0` |
+| USDY | `0x5be26527e817998A7206475496fDe1E68957C5A9` |
 
 ---
 
