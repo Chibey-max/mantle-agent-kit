@@ -36,7 +36,7 @@ export function OverviewPanel() {
   const paused = mounted && isPaused === true;
   const dailyPct = (mounted && dailyLimit > 0) ? (dailySpent / dailyLimit) * 100 : 0;
   const gaugeColor = dailyPct > 80 ? "#ef4444" : dailyPct > 50 ? "#f59e0b" : "#00d4aa";
-  const circumference = 2 * Math.PI * 56;
+  const circumference = 2 * Math.PI * 60;
 
   const tokens: TokenRow[] = [
     { symbol: "MNT", amount: mntBalance, icon: "M", color: "#00d4aa" },
@@ -64,39 +64,42 @@ export function OverviewPanel() {
       {/* Circular Gauge — Daily Limit */}
       <div className="flex justify-center mb-6">
         <div className="relative">
-          <svg width="140" height="140" viewBox="0 0 140 140">
-            <circle cx="70" cy="70" r="56" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10" />
+          <svg width="152" height="152" viewBox="0 0 152 152">
+            <circle cx="76" cy="76" r="60" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10" />
             <circle
-              cx="70" cy="70" r="56"
+              cx="76" cy="76" r="60"
               fill="none"
               stroke={gaugeColor}
               strokeWidth="10"
               strokeLinecap="round"
               strokeDasharray={`${circumference}`}
               strokeDashoffset={`${circumference * (1 - dailyPct / 100)}`}
-              transform="rotate(-90 70 70)"
+              transform="rotate(-90 76 76)"
               style={{ transition: "stroke-dashoffset 1s ease, stroke 0.3s ease" }}
             />
             <circle
-              cx="70" cy="70" r="56"
+              cx="76" cy="76" r="60"
               fill="none"
               stroke="rgba(0,212,170,0.15)"
               strokeWidth="18"
               strokeDasharray={`${circumference}`}
               strokeDashoffset={`${circumference * (1 - dailyPct / 100)}`}
-              transform="rotate(-90 70 70)"
+              transform="rotate(-90 76 76)"
               style={{ filter: "blur(4px)" }}
             />
           </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-0.5">
             {!mounted || limitsLoading ? (
               <div className={`${shimmer} w-12 h-6 mb-1`} />
             ) : (
               <>
-                <div className="text-2xl font-black text-white">{dailyPct.toFixed(0)}%</div>
-                <div className="text-xs text-[var(--color-text-secondary)]">daily used</div>
-                <div className="text-xs font-mono text-[var(--color-green)]">
-                  {dailySpent.toFixed(2)}/{dailyLimit.toFixed(2)} MNT
+                <div className="text-2xl font-black text-white leading-none">{dailyPct.toFixed(0)}%</div>
+                <div className="text-[10px] text-[var(--color-text-secondary)] leading-none">daily used</div>
+                <div className="text-[10px] font-mono text-[var(--color-green)] leading-none mt-1">
+                  {dailySpent.toFixed(2)} MNT
+                </div>
+                <div className="text-[9px] font-mono text-[var(--color-text-muted)] leading-none">
+                  of {dailyLimit.toFixed(2)}
                 </div>
               </>
             )}
