@@ -1,0 +1,32 @@
+# Environment files — never commit private keys
+.env
+.env.local
+.env.*.local
+*.env
+
+# Node
+node_modules/
+.next/
+dist/
+build/
+out/
+
+# Foundry build artifacts
+contracts/out/
+contracts/cache/
+contracts/broadcast/
+contracts/lib/
+
+# Foundry lock
+contracts/foundry.lock
+
+# TypeScript
+*.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/

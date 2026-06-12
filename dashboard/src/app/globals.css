@@ -1,0 +1,179 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Design Tokens ─────────────────────────────────────────────────────────── */
+:root {
+  --color-bg:              #0a0a10;
+  --color-surface:         #111118;
+  --color-surface-raised:  #16161f;
+  --color-border:          #1e1e2c;
+  --color-border-accent:   rgba(0, 212, 170, 0.38);
+  --color-green:           #00d4aa;
+  --color-green-dim:       rgba(0, 212, 170, 0.5);
+  --color-purple:          #7c3aed;
+  --color-red:             #ef4444;
+  --color-yellow:          #f59e0b;
+  --color-text-primary:    #e8e8f0;
+  --color-text-secondary:  #6b6b82;
+  --color-text-muted:      #42425a;
+
+  /* compatibility aliases used by panels */
+  --color-bg-secondary:    #0c0c14;
+  --color-card:            #111118;
+  --color-card-hover:      #16161f;
+  --glass-bg:              #111118;
+  --glass-border:          #1e1e2c;
+  --glass-blur:            blur(0px);
+  --glass-shadow:          0 1px 3px rgba(0, 0, 0, 0.4);
+  --glow-green:            none;
+  --glow-green-strong:     none;
+  --glow-purple:           none;
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────────────── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  font-family: 'Inter', system-ui, sans-serif;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #2a2a3a; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #3c3c52; }
+
+/* ─── Card ───────────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  transition: border-color 0.18s ease;
+}
+.card:hover { border-color: var(--color-border-accent); }
+
+/* ─── Status Badges ──────────────────────────────────────────────────────────── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+.status-badge.live {
+  background: rgba(0, 212, 170, 0.07);
+  border: 1px solid rgba(0, 212, 170, 0.2);
+  color: var(--color-green);
+}
+.status-badge.warning {
+  background: rgba(245, 158, 11, 0.07);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  color: #f59e0b;
+}
+.status-badge.error {
+  background: rgba(239, 68, 68, 0.07);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  color: #ef4444;
+}
+
+/* ─── Live Dot ───────────────────────────────────────────────────────────────── */
+@keyframes dotPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+.live-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  background: var(--color-green);
+  border-radius: 50%;
+  animation: dotPulse 2.4s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+/* ─── Loading Shimmer ────────────────────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+.loading-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.03) 25%,
+    rgba(255,255,255,0.07) 50%,
+    rgba(255,255,255,0.03) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite;
+}
+
+/* ─── Terminal Text ──────────────────────────────────────────────────────────── */
+.terminal-text {
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 0.8rem;
+  color: var(--color-green);
+  letter-spacing: 0.02em;
+}
+
+/* ─── Tab Navigation (underline style) ──────────────────────────────────────── */
+.tab-nav {
+  display: flex;
+  border-bottom: 1px solid var(--color-border);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tab-nav::-webkit-scrollbar { display: none; }
+
+/* ─── Glass Pill (compatibility — used by Navbar) ───────────────────────────── */
+.glass-pill {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+}
+
+/* ─── Chart Overrides ────────────────────────────────────────────────────────── */
+.recharts-cartesian-grid-horizontal line,
+.recharts-cartesian-grid-vertical line {
+  stroke: rgba(255, 255, 255, 0.04) !important;
+}
+.recharts-tooltip-wrapper .recharts-default-tooltip {
+  background: #111118 !important;
+  border: 1px solid #1e1e2c !important;
+  border-radius: 8px !important;
+  backdrop-filter: none !important;
+}
+
+/* ─── Compatibility stubs (panels reference these) ───────────────────────────── */
+.glow-green, .glow-green-strong, .glow-purple { box-shadow: none; }
+.text-glow-green, .text-glow-purple { text-shadow: none; }
+.gradient-text {
+  background: none;
+  -webkit-text-fill-color: inherit;
+  color: var(--color-text-primary);
+}
+.glass-inset {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+}
+.glass-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+.pulse-green { }
+.iridescent-border::before { display: none; }
+.hero-ambient { display: none; }
