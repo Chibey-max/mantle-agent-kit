@@ -7,7 +7,7 @@
 [![Deployed on Mantle Sepolia](https://img.shields.io/badge/Deployed-Mantle%20Sepolia-0a0a0a)](https://explorer.sepolia.mantle.xyz)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**[Live Dashboard](#)** | **[Demo Video](#)** | **[Mantle Sepolia Explorer](https://explorer.sepolia.mantle.xyz)**
+**[Live Dashboard](https://dashboard-ten-self-97.vercel.app)** | **[Demo Video](#)** | **[Mantle Sepolia Explorer](https://explorer.sepolia.mantle.xyz)**
 
 ---
 
