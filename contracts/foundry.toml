@@ -9,5 +9,5 @@ mantle_sepolia = "https://rpc.sepolia.mantle.xyz"
 mantle_mainnet = "https://rpc.mantle.xyz"
 
 [etherscan]
-mantle_sepolia = { key = "placeholder", url = "https://explorer.sepolia.mantle.xyz/api" }
-mantle_mainnet = { key = "${MANTLESCAN_API_KEY}", url = "https://explorer.mantle.xyz/api" }
+mantle_sepolia = { key = "placeholder", url = "https://explorer.sepolia.mantle.xyz/api?" }
+mantle_mainnet = { key = "placeholder", url = "https://explorer.mantle.xyz/api?" }

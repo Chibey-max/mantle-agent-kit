@@ -15,9 +15,9 @@
 
 | Contract | Address | Explorer |
 |---|---|---|
-| AgentIdentity (ERC-8004) | `0x0de937c8def5284F8e2F0E2546a891EFe67909cb` | [View](https://explorer.sepolia.mantle.xyz/address/0x0de937c8def5284F8e2F0E2546a891EFe67909cb) |
-| MantleAgentWallet | `0x8DD23aBBA62f10306805F0B2C8BF8459d1C3974e` | [View](https://explorer.sepolia.mantle.xyz/address/0x8DD23aBBA62f10306805F0B2C8BF8459d1C3974e) |
-| TradingVault | `0xaC81145B380df6E8BEA7D58b56ED70d325164C94` | [View](https://explorer.sepolia.mantle.xyz/address/0xaC81145B380df6E8BEA7D58b56ED70d325164C94) |
+| AgentIdentity (ERC-8004) | `0xD875871f83891e03376Ec9F594332EB6D276153c` | [View](https://explorer.sepolia.mantle.xyz/address/0xD875871f83891e03376Ec9F594332EB6D276153c) |
+| MantleAgentWallet | `0x013bEfAEfA3fd10836e17AD2E9Eb337303D40deF` | [View](https://explorer.sepolia.mantle.xyz/address/0x013bEfAEfA3fd10836e17AD2E9Eb337303D40deF) |
+| TradingVault | `0x65479a6491061d1c0D7200292Da83f4D48Fc12f7` | [View](https://explorer.sepolia.mantle.xyz/address/0x65479a6491061d1c0D7200292Da83f4D48Fc12f7) |
 
 ---
 
