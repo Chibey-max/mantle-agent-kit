@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createPublicClient, http, defineChain, formatEther, type AbiEvent } from "viem";
 
+// Allow up to 60s execution on Vercel Pro / Hobby max
+export const maxDuration = 60;
+
 const mantleSepolia = defineChain({
   id: 5003,
   name: "Mantle Sepolia",
@@ -16,7 +19,7 @@ const mantleSepolia = defineChain({
 
 const client = createPublicClient({
   chain: mantleSepolia,
-  transport: http("https://rpc.sepolia.mantle.xyz", { timeout: 20_000 }),
+  transport: http("https://rpc.sepolia.mantle.xyz", { timeout: 8_000 }),
 });
 
 // ── ABIs ──────────────────────────────────────────────────────────────────────
@@ -75,15 +78,17 @@ function tokenLabel(addr: string) {
   return shortAddr(addr);
 }
 
-// Recursive range split to handle RPC 10k-block-per-query limits
+// Pre-chunk a range into CHUNK_SIZE-block slices, then fetch all in parallel
+const CHUNK_SIZE = 5_000n;
 type LogArgs = Record<string, unknown>;
-async function safeLogs(
+type LogResult = { args: LogArgs; blockNumber: bigint; transactionHash: `0x${string}` };
+
+async function fetchChunk(
   address: `0x${string}`,
   event: AbiEvent,
   fromBlock: bigint,
-  toBlock: bigint,
-  depth = 0
-): Promise<Array<{ args: LogArgs; blockNumber: bigint; transactionHash: `0x${string}` }>> {
+  toBlock: bigint
+): Promise<LogResult[]> {
   try {
     const logs = await client.getLogs({ address, event, fromBlock, toBlock });
     return logs.map((l) => ({
@@ -92,15 +97,23 @@ async function safeLogs(
       transactionHash: l.transactionHash as `0x${string}`,
     }));
   } catch {
-    // depth 7 → 2^7 = 128 chunks; 60k blocks / 128 = ~470 blocks per chunk (well under 10k)
-    if (depth >= 7 || toBlock <= fromBlock) return [];
-    const mid = fromBlock + (toBlock - fromBlock) / 2n;
-    const [a, b] = await Promise.all([
-      safeLogs(address, event, fromBlock, mid, depth + 1),
-      safeLogs(address, event, mid + 1n, toBlock, depth + 1),
-    ]);
-    return [...a, ...b];
+    return [];
   }
+}
+
+async function safeLogs(
+  address: `0x${string}`,
+  event: AbiEvent,
+  fromBlock: bigint,
+  toBlock: bigint
+): Promise<LogResult[]> {
+  const chunks: Array<[bigint, bigint]> = [];
+  for (let start = fromBlock; start <= toBlock; start += CHUNK_SIZE) {
+    const end = start + CHUNK_SIZE - 1n < toBlock ? start + CHUNK_SIZE - 1n : toBlock;
+    chunks.push([start, end]);
+  }
+  const results = await Promise.all(chunks.map(([s, e]) => fetchChunk(address, event, s, e)));
+  return results.flat();
 }
 
 // ── GET ───────────────────────────────────────────────────────────────────────
