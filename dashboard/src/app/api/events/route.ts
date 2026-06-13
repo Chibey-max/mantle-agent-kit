@@ -138,17 +138,29 @@ export async function GET(req: NextRequest) {
 
   try {
     const currentBlock = await client.getBlockNumber();
-    // Contracts deployed at block ~39,869,495; search from deploy block
-    const DEPLOY_BLOCK = 39_869_495n;
-    const fromBlock = currentBlock > DEPLOY_BLOCK ? DEPLOY_BLOCK : 0n;
 
-    // Fetch all events in parallel
-    const walletEventFetches = WALLET_EVENTS.map((ev) =>
-      safeLogs(walletAddr, ev as unknown as AbiEvent, fromBlock, currentBlock)
-    );
-    const identityEventFetches = IDENTITY_EVENTS.map((ev) =>
-      safeLogs(identityAddr, ev as unknown as AbiEvent, fromBlock, currentBlock)
-    );
+    // Search two windows: deploy window (historical) + recent window
+    // Each window ≤ 9,999 blocks = single getLogs call, no chunking needed
+    const DEPLOY_BLOCK = 39_869_495n;
+    const DEPLOY_END   = DEPLOY_BLOCK + 9_999n;
+    const RECENT_START = currentBlock > 9_999n ? currentBlock - 9_999n : 0n;
+
+    // If deploy window and recent window overlap (chain is young), just use one range
+    const windows: Array<[bigint, bigint]> =
+      DEPLOY_END >= RECENT_START
+        ? [[DEPLOY_BLOCK, currentBlock]]
+        : [[DEPLOY_BLOCK, DEPLOY_END], [RECENT_START, currentBlock]];
+
+    // For each event type, fetch all windows in parallel, then merge
+    async function getAllLogs(address: `0x${string}`, event: AbiEvent) {
+      const perWindow = await Promise.all(
+        windows.map(([from, to]) => safeLogs(address, event, from, to))
+      );
+      return perWindow.flat();
+    }
+
+    const walletEventFetches  = WALLET_EVENTS.map((ev)   => getAllLogs(walletAddr,   ev as unknown as AbiEvent));
+    const identityEventFetches = IDENTITY_EVENTS.map((ev) => getAllLogs(identityAddr, ev as unknown as AbiEvent));
 
     const [walletResults, identityResults] = await Promise.all([
       Promise.all(walletEventFetches),

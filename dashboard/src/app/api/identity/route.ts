@@ -37,13 +37,13 @@ const IDENTITY_ABI = [
         name: "",
         type: "tuple",
         components: [
-          { name: "agentAddress", type: "address" },
           { name: "name", type: "string" },
           { name: "agentType", type: "string" },
           { name: "reputation", type: "uint256" },
           { name: "actionCount", type: "uint256" },
           { name: "createdAt", type: "uint256" },
           { name: "lastActive", type: "uint256" },
+          { name: "agentAddress", type: "address" },
           { name: "active", type: "bool" },
         ],
       },
@@ -92,13 +92,37 @@ export async function GET(request: NextRequest) {
     );
   }
 
+  // Minimal ABI to read agent role from the wallet contract
+  const WALLET_AGENT_ABI = [
+    { name: "agent", type: "function", stateMutability: "view", inputs: [], outputs: [{ name: "", type: "address" }] },
+  ] as const;
+
   try {
-    const tokenIdRaw = await client.readContract({
+    // 1. Try the address passed directly
+    let tokenIdRaw = await client.readContract({
       address: identityContract,
       abi: IDENTITY_ABI,
       functionName: "agentTokenId",
       args: [agentAddress],
-    });
+    }).catch(() => 0n);
+
+    // 2. If not found, check if the passed address is a wallet contract and try its agent() EOA
+    if (Number(tokenIdRaw) === 0) {
+      const agentEOA = await client.readContract({
+        address: agentAddress,
+        abi: WALLET_AGENT_ABI,
+        functionName: "agent",
+      }).catch(() => null);
+
+      if (agentEOA) {
+        tokenIdRaw = await client.readContract({
+          address: identityContract,
+          abi: IDENTITY_ABI,
+          functionName: "agentTokenId",
+          args: [agentEOA],
+        }).catch(() => 0n);
+      }
+    }
 
     const tokenId = Number(tokenIdRaw);
 
@@ -129,13 +153,13 @@ export async function GET(request: NextRequest) {
     ]);
 
     const d = identityData as {
-      agentAddress: `0x${string}`;
       name: string;
       agentType: string;
       reputation: bigint;
       actionCount: bigint;
       createdAt: bigint;
       lastActive: bigint;
+      agentAddress: `0x${string}`;
       active: boolean;
     };
 
@@ -153,6 +177,11 @@ export async function GET(request: NextRequest) {
       success: a.success,
     }));
 
+    const safeDate = (ts: bigint) => {
+      const n = Number(ts);
+      return n > 0 ? new Date(n * 1000).toISOString() : null;
+    };
+
     return NextResponse.json({
       hasIdentity: true,
       tokenId,
@@ -160,8 +189,8 @@ export async function GET(request: NextRequest) {
       agentType: d.agentType,
       reputation: Number(d.reputation),
       actionCount: Number(d.actionCount),
-      createdAt: new Date(Number(d.createdAt) * 1000).toISOString(),
-      lastActive: new Date(Number(d.lastActive) * 1000).toISOString(),
+      createdAt: safeDate(d.createdAt),
+      lastActive: safeDate(d.lastActive),
       agentAddress: d.agentAddress,
       active: d.active,
       actions,
