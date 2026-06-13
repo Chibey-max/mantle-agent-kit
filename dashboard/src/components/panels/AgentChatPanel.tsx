@@ -117,7 +117,7 @@ function MessageBubble({ message }: { message: Message }) {
                 }
               : isAgent
               ? {
-                  background: "rgba(8,8,20,0.7)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+                  background: "rgba(16,16,28,1)",
                   border: "1px solid rgba(0,212,170,0.12)",
                   color: "var(--color-text-primary)",
                   borderBottomLeftRadius: "6px",
@@ -290,7 +290,7 @@ export function AgentChatPanel() {
               <div
                 className="px-4 py-3 rounded-2xl"
                 style={{
-                  background: "rgba(8,8,20,0.7)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)",
+                  background: "rgba(16,16,28,1)",
                   border: "1px solid rgba(0,212,170,0.12)",
                   borderBottomLeftRadius: "6px",
                 }}
@@ -340,8 +340,7 @@ export function AgentChatPanel() {
         <div
           className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl"
           style={{
-            background: "rgba(0,0,0,0.3)",
-            backdropFilter: "blur(12px)",
+            background: "rgba(10,10,18,1)",
             border: "1px solid rgba(255,255,255,0.07)",
             boxShadow: "inset 0 1px 3px rgba(0,0,0,0.4)",
           }}

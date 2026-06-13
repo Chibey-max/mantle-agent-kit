@@ -5,31 +5,38 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Settings, ChevronDown, ChevronUp, CheckCircle, RefreshCw } from "lucide-react";
 import { getContractAddresses, saveContractAddresses } from "@/lib/config";
 
-const DEMO_ADDRESSES = {
-  walletAddress: "0x0000000000000000000000000000000000000001",
-  identityAddress: "0x0000000000000000000000000000000000000002",
-  vaultAddress: "0x0000000000000000000000000000000000000003",
-};
+// Real deployed addresses — used to auto-configure and as the "Use Deployed" shortcut
+const ENV_WALLET   = process.env.NEXT_PUBLIC_AGENT_CONTRACT_ADDRESS    || "";
+const ENV_IDENTITY = process.env.NEXT_PUBLIC_IDENTITY_CONTRACT_ADDRESS || "";
+const ENV_VAULT    = process.env.NEXT_PUBLIC_TRADING_VAULT_ADDRESS     || "";
+
+// Old placeholder values that may be in localStorage from before real deploy
+const STALE_PLACEHOLDERS = new Set([
+  "0x0000000000000000000000000000000000000001",
+  "0x0000000000000000000000000000000000000002",
+  "0x0000000000000000000000000000000000000003",
+]);
 
 export function ContractConfigPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [saved, setSaved] = useState(false);
-  const [walletAddress, setWalletAddress] = useState("");
-  const [identityAddress, setIdentityAddress] = useState("");
-  const [vaultAddress, setVaultAddress] = useState("");
+  const [walletAddress,   setWalletAddress]   = useState(ENV_WALLET);
+  const [identityAddress, setIdentityAddress] = useState(ENV_IDENTITY);
+  const [vaultAddress,    setVaultAddress]    = useState(ENV_VAULT);
 
   useEffect(() => {
     const addrs = getContractAddresses();
-    if (addrs) {
-      setWalletAddress(addrs.walletAddress);
-      setIdentityAddress(addrs.identityAddress);
-      setVaultAddress(addrs.vaultAddress);
-      // Auto-open if nothing is configured
-      if (!addrs.walletAddress && !addrs.identityAddress && !addrs.vaultAddress) {
-        setIsOpen(true);
-      }
-    } else {
-      setIsOpen(true);
+    const wallet   = STALE_PLACEHOLDERS.has(addrs?.walletAddress ?? "")   ? ENV_WALLET   : (addrs?.walletAddress   || ENV_WALLET);
+    const identity = STALE_PLACEHOLDERS.has(addrs?.identityAddress ?? "") ? ENV_IDENTITY : (addrs?.identityAddress || ENV_IDENTITY);
+    const vault    = STALE_PLACEHOLDERS.has(addrs?.vaultAddress ?? "")    ? ENV_VAULT    : (addrs?.vaultAddress    || ENV_VAULT);
+
+    setWalletAddress(wallet);
+    setIdentityAddress(identity);
+    setVaultAddress(vault);
+
+    // Auto-save real addresses to localStorage so components pick them up
+    if (wallet || identity || vault) {
+      saveContractAddresses({ walletAddress: wallet, identityAddress: identity, vaultAddress: vault });
     }
   }, []);
 
@@ -41,10 +48,10 @@ export function ContractConfigPanel() {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const handleUseDemos = () => {
-    setWalletAddress(DEMO_ADDRESSES.walletAddress);
-    setIdentityAddress(DEMO_ADDRESSES.identityAddress);
-    setVaultAddress(DEMO_ADDRESSES.vaultAddress);
+  const handleUseDeployed = () => {
+    setWalletAddress(ENV_WALLET);
+    setIdentityAddress(ENV_IDENTITY);
+    setVaultAddress(ENV_VAULT);
   };
 
   const handleClear = () => {
@@ -59,8 +66,6 @@ export function ContractConfigPanel() {
       className="mb-8 rounded-2xl overflow-hidden"
       style={{
         background: "rgba(8,8,20,0.5)",
-        backdropFilter: "blur(24px) saturate(140%)",
-        WebkitBackdropFilter: "blur(24px) saturate(140%)",
         border: "1px solid rgba(255,255,255,0.065)",
         boxShadow: "inset 0 1px 0 rgba(255,255,255,0.07), 0 8px 32px rgba(0,0,0,0.4)",
       }}
@@ -75,29 +80,20 @@ export function ContractConfigPanel() {
           <span className="text-sm font-semibold text-[var(--color-text-secondary)]">
             Contract Configuration
           </span>
-          {!hasConfig && (
+          {!hasConfig ? (
             <span
               className="text-[10px] px-2 py-0.5 rounded font-mono"
-              style={{
-                background: "rgba(245,158,11,0.1)",
-                border: "1px solid rgba(245,158,11,0.25)",
-                color: "#f59e0b",
-              }}
+              style={{ background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.25)", color: "#f59e0b" }}
             >
               not configured
             </span>
-          )}
-          {hasConfig && (
+          ) : (
             <span
               className="text-[10px] px-2 py-0.5 rounded font-mono flex items-center gap-1"
-              style={{
-                background: "rgba(0,212,170,0.08)",
-                border: "1px solid rgba(0,212,170,0.2)",
-                color: "var(--color-green)",
-              }}
+              style={{ background: "rgba(0,212,170,0.08)", border: "1px solid rgba(0,212,170,0.2)", color: "var(--color-green)" }}
             >
               <CheckCircle className="w-2.5 h-2.5" />
-              configured
+              Mantle Sepolia · configured
             </span>
           )}
         </div>
@@ -122,26 +118,25 @@ export function ContractConfigPanel() {
               style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}
             >
               <p className="text-xs text-[var(--color-text-muted)]">
-                Enter your deployed contract addresses on Mantle Sepolia. These are stored in your browser&apos;s localStorage.
+                Contract addresses on Mantle Sepolia (Chain 5003). Pre-filled from deployment.
               </p>
 
               <div className="grid gap-3">
                 {[
-                  { label: "Agent Wallet Contract Address", value: walletAddress, setter: setWalletAddress, placeholder: "0x..." },
-                  { label: "Identity Contract Address", value: identityAddress, setter: setIdentityAddress, placeholder: "0x..." },
-                  { label: "Trading Vault Address", value: vaultAddress, setter: setVaultAddress, placeholder: "0x..." },
-                ].map(({ label, value, setter, placeholder }) => (
+                  { label: "Agent Wallet Contract", value: walletAddress, setter: setWalletAddress },
+                  { label: "Identity Contract (ERC-8004)", value: identityAddress, setter: setIdentityAddress },
+                  { label: "Trading Vault", value: vaultAddress, setter: setVaultAddress },
+                ].map(({ label, value, setter }) => (
                   <div key={label}>
                     <label className="block text-xs text-[var(--color-text-secondary)] mb-1">{label}</label>
                     <input
                       type="text"
                       value={value}
                       onChange={(e) => setter(e.target.value)}
-                      placeholder={placeholder}
+                      placeholder="0x..."
                       className="w-full px-3 py-2 rounded-xl text-xs font-mono text-white outline-none transition-all"
                       style={{
                         background: "rgba(0,0,0,0.3)",
-                        backdropFilter: "blur(8px)",
                         border: "1px solid rgba(255,255,255,0.07)",
                         boxShadow: "inset 0 1px 3px rgba(0,0,0,0.4)",
                       }}
@@ -168,16 +163,10 @@ export function ContractConfigPanel() {
                     color: "var(--color-green)",
                   }}
                 >
-                  {saved ? (
-                    <>
-                      <CheckCircle className="w-4 h-4" /> Saved
-                    </>
-                  ) : (
-                    "Save Addresses"
-                  )}
+                  {saved ? <><CheckCircle className="w-4 h-4" /> Saved</> : "Save Addresses"}
                 </button>
                 <button
-                  onClick={handleUseDemos}
+                  onClick={handleUseDeployed}
                   className="px-4 py-2 rounded-xl text-sm font-semibold transition-all"
                   style={{
                     background: "rgba(255,255,255,0.04)",
@@ -185,23 +174,17 @@ export function ContractConfigPanel() {
                     color: "var(--color-text-secondary)",
                   }}
                 >
-                  Use Demo
+                  Use Deployed
                 </button>
                 <button
                   onClick={handleClear}
                   className="p-2 rounded-xl transition-all hover:bg-white/5"
                   style={{ color: "var(--color-text-muted)" }}
-                  title="Clear all addresses"
+                  title="Clear all"
                 >
                   <RefreshCw className="w-4 h-4" />
                 </button>
               </div>
-
-              {!hasConfig && (
-                <p className="text-xs text-[var(--color-text-muted)]">
-                  No contracts? Deploy from <code className="font-mono">mantle/contracts/</code> using Foundry, or click &quot;Use Demo&quot; for placeholder addresses.
-                </p>
-              )}
             </div>
           </motion.div>
         )}

@@ -11,6 +11,71 @@
 
 ---
 
+## Hackathon Submission — Mantle Turing Test Hackathon 2026
+
+### Elevator Pitch
+
+AI agents are going on-chain. The missing piece is **accountability**. Mantle Agent Kit gives every AI agent a permanent, verifiable identity — so when an autonomous agent trades, transfers, or interacts with DeFi, it leaves a signed, on-chain record that nobody can erase or dispute.
+
+### What Problem We Solve
+
+Today's AI agents on-chain share human wallets with no audit trail, no spending limits, and no way to verify what actions the AI actually took versus what a human did. When something goes wrong, there is no accountability.
+
+We solve this with three interconnected layers:
+
+1. **Identity Layer** — An ERC-8004 soulbound NFT that cannot be transferred, grows reputation with every verified action, and records each decision permanently on Mantle
+2. **Policy Layer** — A smart wallet with per-transaction limits, daily caps, address whitelist, guardian emergency pause, and a 2-day timelock on all policy changes — so owners stay in control even when the agent acts autonomously
+3. **Intelligence Layer** — A Bybit v5-powered quant engine with RSI(14) + EMA(9/21) technical signals, Kelly criterion position sizing, and a TradingVault that enforces risk limits at the contract level
+
+### What Makes This Different
+
+**ERC-8004 is the hackathon's own standard.** We implemented the full spec: soulbound minting, `recordAction()` for on-chain action provenance, reputation scoring that increases on successes and decreases on failures, and deactivation via guardian. When judges look at our contracts, they're seeing their own standard used correctly in a real production system.
+
+**Every AI decision is immutable on Mantle.** We don't log to a database. We don't use centralized APIs for state. The audit trail in our dashboard reads directly from `ActionRecorded` and `ExecutedWithIdentity` events on Mantle Sepolia — real, indexed, permanent history.
+
+**Real Bybit integration, not mock data.** Our trading panel calls the Bybit v5 REST API (`/v5/market/kline`, `/v5/market/tickers`) for live MNT/USDT candlestick data, computes RSI and EMAs client-side, and generates AI trading signals with position sizing. When Bybit is unavailable, we gracefully fall back to synthetic data so the dashboard always works.
+
+**Policy enforcement without centralization.** No multisig, no off-chain signer. The `MantleAgentWallet` enforces spending limits in Solidity — `getDailyRemaining()`, `tokenPolicies()`, `whitelist[]`. The agent can only spend what the policy allows. The guardian can pause the wallet in a single transaction.
+
+**Multi-track submission.** We intentionally cover both Track 01 (AI Trading) and Track 06 (Agentic Economy), demonstrating that the identity and policy infrastructure is general-purpose, not just a trading tool.
+
+### How It Works — End to End
+
+```
+User → sets policy (spending limits, whitelist, guardian) via guardian tx
+Agent → reads policy, gets Bybit signal, decides to trade
+Agent → calls MantleAgentWallet.executeWithIdentity()
+Contract → checks: paused? whitelist? spending limit? timelock?
+Contract → executes call + emits ExecutedWithIdentity(target, value, tokenId, action)
+AgentIdentity → recordAction(tokenId, action, txHash) → emits ActionRecorded
+AgentIdentity → updates reputation score → emits ReputationUpdated
+Dashboard → reads events via viem getLogs → shows live audit trail
+```
+
+### Track Alignment
+
+| Track | Criterion | How We Meet It |
+|---|---|---|
+| Track 01: AI Trading | Live market data | Bybit v5 real OHLCV for MNT/USDT |
+| Track 01: AI Trading | AI signal generation | RSI(14) + EMA(9/21) crossover + Kelly sizing |
+| Track 01: AI Trading | On-chain execution | TradingVault with daily loss limits |
+| Track 06: Agentic Economy | Byreal Skills CLI | 6 skills: transfer-mnt, swap-agni, swap-merchant-moe, stake-meth, execute-trade, record-action |
+| Track 06: Agentic Economy | ERC-8004 identity | Full implementation with reputation, deactivation, action recording |
+| Track 06: Agentic Economy | Policy enforcement | MantleAgentWallet with per-tx + daily limits + whitelist + guardian |
+| Best UI/UX | Clean, data-first UI | 5-tab dashboard, live stats bar, no glassmorphism, mono data |
+
+### Deployed Contracts
+
+| Contract | Address |
+|---|---|
+| AgentIdentity (ERC-8004) | `0xD875871f83891e03376Ec9F594332EB6D276153c` |
+| MantleAgentWallet | `0x013bEfAEfA3fd10836e17AD2E9Eb337303D40deF` |
+| TradingVault | `0x65479a6491061d1c0D7200292Da83f4D48Fc12f7` |
+
+All deployed on Mantle Sepolia · Chain ID 5003 · Verified on Mantle Explorer
+
+---
+
 ## Contract Addresses — Mantle Sepolia (Chain ID: 5003)
 
 | Contract | Address | Explorer |

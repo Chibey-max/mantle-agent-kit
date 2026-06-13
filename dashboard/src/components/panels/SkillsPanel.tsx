@@ -98,10 +98,30 @@ export function SkillsPanel() {
     if (!activeSkill) return;
     setExecuting(true);
     setResult(null);
-    // Simulate execution
-    await new Promise((r) => setTimeout(r, 1800));
-    setExecuting(false);
-    setResult({ success: true, message: "Skill executed successfully on Mantle." });
+    try {
+      // Call the agent API with the skill as a command
+      const paramsSummary = Object.entries(formValues)
+        .filter(([, v]) => v.trim())
+        .map(([k, v]) => `${k}=${v}`)
+        .join(", ");
+      const command = `Execute skill: ${activeSkill.name}${paramsSummary ? ` (${paramsSummary})` : ""}`;
+      const res = await fetch("/api/agent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: command, history: [], contractAddress: "", identityAddress: "" }),
+      });
+      const data = await res.json();
+      setResult({
+        success: !data.error,
+        message: data.error
+          ? `Agent error: ${data.error}`
+          : (data.response || `${activeSkill.name} queued — agent will execute on Mantle Sepolia via MantleAgentWallet.`),
+      });
+    } catch {
+      setResult({ success: false, message: "Failed to reach agent endpoint." });
+    } finally {
+      setExecuting(false);
+    }
   };
 
   return (
