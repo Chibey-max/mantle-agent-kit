@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Fira+Code:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -34,8 +34,8 @@
   --amber: #f59e0b;
   --red:   #f87171;
   /* Typography */
-  --sans: 'Outfit', system-ui, sans-serif;
-  --mono: 'Space Mono', 'JetBrains Mono', monospace;
+  --sans: 'Syne', system-ui, sans-serif;
+  --mono: 'Fira Code', 'JetBrains Mono', monospace;
   /* Blur filters */
   --blur:  blur(52px) saturate(220%) brightness(1.07);
   --blur2: blur(28px) saturate(180%);
@@ -112,6 +112,54 @@
   --color-purple:         #5b21b6;
 }
 
+/* ─── Keyframes ──────────────────────────────────────────────────────────────── */
+
+@keyframes orbDrift {
+  0%   { transform: translateY(0px)   scale(1);    }
+  33%  { transform: translateY(-28px) scale(1.03); }
+  66%  { transform: translateY(18px)  scale(0.97); }
+  100% { transform: translateY(0px)   scale(1);    }
+}
+
+@keyframes orbDriftB {
+  0%   { transform: translateX(0px)   translateY(0px);   }
+  40%  { transform: translateX(24px)  translateY(-20px); }
+  80%  { transform: translateX(-16px) translateY(14px);  }
+  100% { transform: translateX(0px)   translateY(0px);   }
+}
+
+@keyframes scanLine {
+  0%   { transform: translateY(-100%); opacity: 0; }
+  10%  { opacity: 0.6; }
+  90%  { opacity: 0.6; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 8px var(--teal), 0 0 0px rgba(0,229,160,0); }
+  50%       { box-shadow: 0 0 18px var(--teal), 0 0 40px rgba(0,229,160,0.25); }
+}
+
+@keyframes borderGlow {
+  0%, 100% { border-color: var(--b1); }
+  50%       { border-color: var(--tb); }
+}
+
+@keyframes numberReveal {
+  from { opacity: 0; transform: translateY(8px); filter: blur(4px); }
+  to   { opacity: 1; transform: translateY(0);   filter: blur(0);   }
+}
+
+@keyframes slideInLeft {
+  from { opacity: 0; transform: translateX(-16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slideInDown {
+  from { opacity: 0; transform: translateY(-12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ─── Base ───────────────────────────────────────────────────────────────────── */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
@@ -120,6 +168,8 @@ body {
   background: var(--bg);
   font-family: var(--sans);
   color: var(--t1);
+  font-size: 15px;
+  letter-spacing: 0.01em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
@@ -130,33 +180,50 @@ body {
 .glass {
   background: var(--s1);
   border: 1px solid var(--b1);
-  border-radius: 16px;
+  border-radius: 18px;
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
   box-shadow: var(--sh);
-  transition: var(--tr);
+  transition: transform 0.35s var(--ease), border-color 0.35s, box-shadow 0.35s var(--ease);
+}
+.glass:hover {
+  transform: translateY(-2px);
+  border-color: var(--b2);
+  box-shadow: var(--sh), 0 0 0 1px rgba(0,229,160,0.12);
 }
 .glass-sm {
   background: var(--s2);
   border: 1px solid var(--b2);
-  border-radius: 10px;
+  border-radius: 12px;
   backdrop-filter: var(--blur2);
   -webkit-backdrop-filter: var(--blur2);
   box-shadow: var(--sh2);
-  transition: var(--tr);
+  transition: transform 0.28s var(--ease), border-color 0.28s;
+}
+.glass-sm:hover {
+  transform: translateY(-1px);
+  border-color: var(--b3);
 }
 
 /* ─── Card (panels use .card) ────────────────────────────────────────────────── */
 .card {
   background: var(--s1);
   border: 1px solid var(--b1);
-  border-radius: 16px;
+  border-radius: 18px;
   backdrop-filter: var(--blur);
   -webkit-backdrop-filter: var(--blur);
   box-shadow: var(--sh);
-  transition: var(--tr);
+  transition: transform 0.35s var(--ease), border-color 0.35s, box-shadow 0.35s var(--ease);
 }
-.card:hover { border-color: var(--b2); }
+.card:hover {
+  transform: translateY(-2px);
+  border-color: var(--b2);
+  box-shadow: var(--sh), 0 0 0 1px rgba(0,229,160,0.10), 0 28px 64px rgba(0,0,0,0.6);
+}
+
+/* ─── Animated orbs ──────────────────────────────────────────────────────────── */
+.orb-a { animation: orbDrift  18s ease-in-out infinite; }
+.orb-b { animation: orbDriftB 22s ease-in-out infinite; }
 
 /* ─── Scrollbar ──────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar { width: 4px; height: 4px; }
@@ -166,24 +233,36 @@ body {
 
 /* ─── Page enter animation ───────────────────────────────────────────────────── */
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(10px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(14px) scale(0.99); filter: blur(3px); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    filter: blur(0);   }
 }
-.page-enter { animation: fadeUp 0.38s var(--ease) both; }
+.page-enter { animation: fadeUp 0.45s var(--ease) both; }
+
+/* ─── Panel stagger ──────────────────────────────────────────────────────────── */
+.panel-enter {
+  animation: fadeUp 0.42s var(--ease) both;
+}
+.panel-enter:nth-child(1) { animation-delay: 0ms;   }
+.panel-enter:nth-child(2) { animation-delay: 60ms;  }
+.panel-enter:nth-child(3) { animation-delay: 120ms; }
+.panel-enter:nth-child(4) { animation-delay: 180ms; }
 
 /* ─── Live Dot ───────────────────────────────────────────────────────────────── */
 @keyframes pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.4; transform: scale(0.8); }
+  50%       { opacity: 0.35; transform: scale(0.7); }
+}
+@keyframes liveDotGlow {
+  0%, 100% { box-shadow: 0 0 6px var(--teal), 0 0 0 0 rgba(0,229,160,0.4); }
+  50%       { box-shadow: 0 0 12px var(--teal), 0 0 8px 2px rgba(0,229,160,0.15); }
 }
 .live-dot {
   display: inline-block;
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   background: var(--teal);
   border-radius: 50%;
-  box-shadow: 0 0 8px var(--teal);
-  animation: pulse 2s infinite;
+  animation: pulse 2s infinite, liveDotGlow 2s infinite;
   flex-shrink: 0;
 }
 

@@ -43,8 +43,8 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ["Outfit", "system-ui", "sans-serif"],
-        mono: ["Space Mono", "JetBrains Mono", "monospace"],
+        sans: ["Syne", "system-ui", "sans-serif"],
+        mono: ["Fira Code", "JetBrains Mono", "monospace"],
       },
       backdropBlur: {
         xs: "2px",

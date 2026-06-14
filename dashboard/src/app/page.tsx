@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAccount, useConnect, useDisconnect } from "wagmi";
 import { injected } from "wagmi/connectors";
 import { AnimatePresence, motion } from "framer-motion";
@@ -26,7 +26,27 @@ import { getContractAddresses } from "@/lib/config";
 
 type Page = "trading" | "identity" | "agent" | "defi";
 
-// ─── Sidebar ────────────────────────────────────────────────────────────────────
+// ─── Motion variants ─────────────────────────────────────────────────────────────
+
+const slideInLeft  = { hidden: { x: -28, opacity: 0 }, show: { x: 0, opacity: 1 } };
+const slideInDown  = { hidden: { y: -20, opacity: 0 }, show: { y: 0, opacity: 1 } };
+const fadeUpBlur   = {
+  hidden: { y: 18, opacity: 0, scale: 0.97, filter: "blur(6px)" },
+  show:   { y: 0,  opacity: 1, scale: 1,    filter: "blur(0px)" },
+};
+const staggerParent = {
+  show: { transition: { staggerChildren: 0.07, delayChildren: 0.12 } },
+};
+const itemFade = {
+  hidden: { opacity: 0, x: -10 },
+  show:   { opacity: 1, x: 0 },
+};
+const statFade = {
+  hidden: { opacity: 0, y: 10, filter: "blur(4px)" },
+  show:   { opacity: 1, y: 0,  filter: "blur(0px)" },
+};
+
+// ─── Nav data ────────────────────────────────────────────────────────────────────
 
 const SB_MAIN = [
   { id: "trading",  icon: "◎", label: "Trading",       badge: "LIVE" },
@@ -41,6 +61,8 @@ const SB_SYS: { icon: string; label: string; target: Page }[] = [
   { icon: "◷", label: "Audit Trail", target: "agent"    },
 ];
 
+// ─── Sidebar ────────────────────────────────────────────────────────────────────
+
 function Sidebar({
   active,
   onNav,
@@ -51,131 +73,147 @@ function Sidebar({
   walletShort: string;
 }) {
   return (
-    <aside
+    <motion.aside
+      variants={slideInLeft}
+      initial="hidden"
+      animate="show"
+      transition={{ duration: 0.48, ease: [0.22, 0.68, 0, 1.15] }}
       style={{
         background: "var(--s1)",
         borderRight: "1px solid var(--b1)",
         backdropFilter: "var(--blur)",
         WebkitBackdropFilter: "var(--blur)",
-        padding: "18px 13px",
+        padding: "20px 14px",
         display: "flex",
         flexDirection: "column",
-        gap: 3,
+        gap: 2,
         overflowY: "auto",
       }}
     >
-      <div style={{ fontFamily: "var(--mono)", fontSize: 8, color: "var(--t4)", letterSpacing: ".18em", textTransform: "uppercase", padding: "12px 10px 5px" }}>
-        Main
-      </div>
+      {/* Section label */}
+      <motion.div
+        variants={staggerParent}
+        initial="hidden"
+        animate="show"
+        style={{ display: "flex", flexDirection: "column", gap: 2 }}
+      >
+        <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--t4)", letterSpacing: ".2em", textTransform: "uppercase", padding: "10px 10px 6px" }}>
+          Main
+        </div>
 
-      {SB_MAIN.map((item) => {
-        const isOn = active === item.id;
-        return (
-          <button
-            key={item.id}
-            onClick={() => onNav(item.id as Page)}
+        {SB_MAIN.map((item) => {
+          const isOn = active === item.id;
+          return (
+            <motion.button
+              key={item.id}
+              variants={itemFade}
+              transition={{ duration: 0.3, ease: [0.22, 0.68, 0, 1.15] }}
+              whileHover={{ x: 3, transition: { duration: 0.18 } }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => onNav(item.id as Page)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 11,
+                padding: "11px 14px",
+                borderRadius: 12,
+                cursor: "pointer",
+                fontSize: 14,
+                fontWeight: isOn ? 600 : 500,
+                color: isOn ? "var(--teal)" : "var(--t2)",
+                background: isOn ? "var(--tg)" : "none",
+                border: `1px solid ${isOn ? "var(--tb)" : "transparent"}`,
+                transition: "background 0.22s, color 0.22s, border-color 0.22s",
+                textAlign: "left",
+                width: "100%",
+                letterSpacing: "0.01em",
+              }}
+            >
+              <span style={{ fontSize: 15, width: 18, textAlign: "center", flexShrink: 0 }}>{item.icon}</span>
+              <span style={{ flex: 1 }}>{item.label}</span>
+              {item.badge && (
+                <motion.span
+                  animate={{ opacity: [0.6, 1, 0.6] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                  style={{
+                    fontFamily: "var(--mono)",
+                    fontSize: 8,
+                    padding: "2px 6px",
+                    borderRadius: 4,
+                    background: "var(--td)",
+                    border: "1px solid var(--tb)",
+                    color: "var(--teal)",
+                  }}
+                >
+                  {item.badge}
+                </motion.span>
+              )}
+            </motion.button>
+          );
+        })}
+
+        <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--t4)", letterSpacing: ".2em", textTransform: "uppercase", padding: "12px 10px 6px" }}>
+          System
+        </div>
+
+        {SB_SYS.map((item) => (
+          <motion.button
+            key={item.label}
+            variants={itemFade}
+            transition={{ duration: 0.3, ease: [0.22, 0.68, 0, 1.15] }}
+            whileHover={{ x: 3, transition: { duration: 0.18 } }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => onNav(item.target)}
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 10,
-              padding: "10px 13px",
-              borderRadius: 10,
+              gap: 11,
+              padding: "11px 14px",
+              borderRadius: 12,
               cursor: "pointer",
-              fontSize: 13.5,
+              fontSize: 14,
               fontWeight: 500,
-              color: isOn ? "var(--teal)" : "var(--t2)",
-              background: isOn ? "var(--tg)" : "none",
-              border: `1px solid ${isOn ? "var(--tb)" : "transparent"}`,
-              transition: "all 0.25s var(--ease)",
+              color: "var(--t2)",
+              background: "none",
+              border: "1px solid transparent",
+              transition: "background 0.22s, color 0.22s, border-color 0.22s",
               textAlign: "left",
               width: "100%",
             }}
-            onMouseEnter={(e) => {
-              if (!isOn) {
-                (e.currentTarget as HTMLElement).style.background = "var(--s2)";
-                (e.currentTarget as HTMLElement).style.color = "var(--t1)";
-                (e.currentTarget as HTMLElement).style.borderColor = "var(--b1)";
-              }
-            }}
-            onMouseLeave={(e) => {
-              if (!isOn) {
-                (e.currentTarget as HTMLElement).style.background = "none";
-                (e.currentTarget as HTMLElement).style.color = "var(--t2)";
-                (e.currentTarget as HTMLElement).style.borderColor = "transparent";
-              }
-            }}
           >
-            <span style={{ fontSize: 14, width: 16, textAlign: "center", flexShrink: 0 }}>{item.icon}</span>
-            <span style={{ flex: 1 }}>{item.label}</span>
-            {item.badge && (
-              <span style={{ marginLeft: "auto", fontFamily: "var(--mono)", fontSize: 7, padding: "2px 5px", borderRadius: 3, background: "var(--td)", border: "1px solid var(--tb)", color: "var(--teal)" }}>
-                {item.badge}
-              </span>
-            )}
-          </button>
-        );
-      })}
-
-      <div style={{ fontFamily: "var(--mono)", fontSize: 8, color: "var(--t4)", letterSpacing: ".18em", textTransform: "uppercase", padding: "12px 10px 5px" }}>
-        System
-      </div>
-
-      {SB_SYS.map((item) => (
-        <button
-          key={item.label}
-          onClick={() => onNav(item.target)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "10px 13px",
-            borderRadius: 10,
-            cursor: "pointer",
-            fontSize: 13.5,
-            fontWeight: 500,
-            color: "var(--t2)",
-            background: "none",
-            border: "1px solid transparent",
-            transition: "all 0.25s var(--ease)",
-            textAlign: "left",
-            width: "100%",
-          }}
-          onMouseEnter={(e) => {
-            (e.currentTarget as HTMLElement).style.background = "var(--s2)";
-            (e.currentTarget as HTMLElement).style.color = "var(--t1)";
-            (e.currentTarget as HTMLElement).style.borderColor = "var(--b1)";
-          }}
-          onMouseLeave={(e) => {
-            (e.currentTarget as HTMLElement).style.background = "none";
-            (e.currentTarget as HTMLElement).style.color = "var(--t2)";
-            (e.currentTarget as HTMLElement).style.borderColor = "transparent";
-          }}
-        >
-          <span style={{ fontSize: 14, width: 16, textAlign: "center", flexShrink: 0 }}>{item.icon}</span>
-          {item.label}
-        </button>
-      ))}
+            <span style={{ fontSize: 15, width: 18, textAlign: "center", flexShrink: 0 }}>{item.icon}</span>
+            {item.label}
+          </motion.button>
+        ))}
+      </motion.div>
 
       {/* Footer */}
-      <div style={{ marginTop: "auto", paddingTop: 13, borderTop: "1px solid var(--b1)" }}>
-        <div
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5, duration: 0.4 }}
+        style={{ marginTop: "auto", paddingTop: 14, borderTop: "1px solid var(--b1)" }}
+      >
+        <motion.div
+          whileHover={{ borderColor: "var(--tb)" }}
           style={{
             background: "var(--s2)",
             border: "1px solid var(--b1)",
-            borderRadius: 9,
-            padding: "11px 13px",
+            borderRadius: 11,
+            padding: "12px 14px",
             backdropFilter: "var(--blur2)",
+            transition: "border-color 0.25s",
           }}
         >
-          <div style={{ fontFamily: "var(--mono)", fontSize: 7, color: "var(--t3)", letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 5 }}>
+          <div style={{ fontFamily: "var(--mono)", fontSize: 8, color: "var(--t3)", letterSpacing: ".12em", textTransform: "uppercase", marginBottom: 6 }}>
             Agent Wallet
           </div>
-          <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--teal)" }}>
+          <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--teal)" }}>
             {walletShort || "0x013b…d0deF"}
           </div>
-        </div>
-      </div>
-    </aside>
+        </motion.div>
+      </motion.div>
+    </motion.aside>
   );
 }
 
@@ -208,26 +246,34 @@ function Topbar({
   const short = address ? `${address.slice(0, 6)}…${address.slice(-4)}` : "";
 
   return (
-    <header
+    <motion.header
+      variants={slideInDown}
+      initial="hidden"
+      animate="show"
+      transition={{ duration: 0.42, ease: [0.22, 0.68, 0, 1.15] }}
       style={{
         gridColumn: "1 / -1",
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        padding: "0 22px",
+        padding: "0 24px",
         background: "var(--s1)",
         borderBottom: "1px solid var(--b1)",
         backdropFilter: "var(--blur)",
         WebkitBackdropFilter: "var(--blur)",
         boxShadow: "var(--sh2)",
-        transition: "var(--tr)",
       }}
     >
       {/* Left: Logo + Nav pills */}
-      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-        <div style={{ fontFamily: "var(--mono)", fontSize: 15, fontWeight: 700, letterSpacing: ".05em", color: "var(--t1)" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 18 }}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2, duration: 0.4, ease: [0.22, 0.68, 0, 1.15] }}
+          style={{ fontFamily: "var(--sans)", fontSize: 17, fontWeight: 800, letterSpacing: ".06em", color: "var(--t1)" }}
+        >
           MANTLE<span style={{ color: "var(--teal)" }}>/</span>AGENT
-        </div>
+        </motion.div>
 
         <nav
           style={{
@@ -235,52 +281,63 @@ function Topbar({
             gap: 3,
             background: "var(--s2)",
             border: "1px solid var(--b1)",
-            borderRadius: 22,
+            borderRadius: 24,
             padding: 4,
             backdropFilter: "var(--blur2)",
           }}
         >
-          {pages.map((p) => {
+          {pages.map((p, i) => {
             const isOn = active === p.id;
             return (
-              <button
+              <motion.button
                 key={p.id}
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 + i * 0.06, duration: 0.35, ease: [0.22, 0.68, 0, 1.15] }}
+                whileHover={{ scale: isOn ? 1 : 1.04 }}
+                whileTap={{ scale: 0.96 }}
                 onClick={() => onNav(p.id)}
                 style={{
-                  fontSize: 13,
-                  fontWeight: isOn ? 600 : 500,
-                  padding: "6px 20px",
-                  borderRadius: 18,
+                  fontSize: 14,
+                  fontWeight: isOn ? 700 : 500,
+                  padding: "7px 22px",
+                  borderRadius: 20,
                   color: isOn ? "#000" : "var(--t2)",
                   background: isOn ? "var(--teal)" : "none",
                   border: "none",
                   cursor: "pointer",
-                  transition: "all 0.32s var(--ease)",
-                  boxShadow: isOn ? "0 4px 16px rgba(0,229,160,0.28)" : "none",
+                  transition: "background 0.3s, color 0.3s, box-shadow 0.3s",
+                  boxShadow: isOn ? "0 4px 20px rgba(0,229,160,0.35)" : "none",
+                  letterSpacing: "0.02em",
                 }}
               >
                 {p.label}
-              </button>
+              </motion.button>
             );
           })}
         </nav>
       </div>
 
-      {/* Right: chips + toggle */}
-      <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+      {/* Right chips */}
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.3, duration: 0.4, ease: [0.22, 0.68, 0, 1.15] }}
+        style={{ display: "flex", alignItems: "center", gap: 10 }}
+      >
         {/* Sepolia live */}
         <div
           style={{
             fontFamily: "var(--mono)",
-            fontSize: 9,
-            padding: "3px 10px",
-            borderRadius: 6,
+            fontSize: 10,
+            padding: "4px 12px",
+            borderRadius: 7,
             border: "1px solid var(--tb)",
             color: "var(--teal)",
             background: "var(--td)",
             display: "flex",
             alignItems: "center",
-            gap: 5,
+            gap: 6,
           }}
         >
           <div className="live-dot" />
@@ -290,40 +347,44 @@ function Topbar({
         {/* Wallet */}
         {mounted && (
           isConnected && address ? (
-            <button
+            <motion.button
+              whileHover={{ borderColor: "var(--b2)" }}
+              whileTap={{ scale: 0.97 }}
               onClick={() => disconnect()}
               style={{
                 fontFamily: "var(--mono)",
-                fontSize: 9,
-                padding: "3px 10px",
-                borderRadius: 6,
+                fontSize: 10,
+                padding: "4px 12px",
+                borderRadius: 7,
                 border: "1px solid var(--b1)",
                 color: "var(--t3)",
                 background: "var(--s2)",
                 cursor: "pointer",
-                transition: "var(--tr)",
+                transition: "border-color 0.22s",
               }}
               title="Click to disconnect"
             >
               {short}
-            </button>
+            </motion.button>
           ) : (
-            <button
+            <motion.button
+              whileHover={{ background: "var(--teal)", color: "#000" }}
+              whileTap={{ scale: 0.97 }}
               onClick={() => connect({ connector: injected() })}
               style={{
                 fontFamily: "var(--mono)",
-                fontSize: 9,
-                padding: "3px 10px",
-                borderRadius: 6,
+                fontSize: 10,
+                padding: "4px 12px",
+                borderRadius: 7,
                 border: "1px solid var(--tb)",
                 color: "var(--teal)",
                 background: "var(--td)",
                 cursor: "pointer",
-                transition: "var(--tr)",
+                transition: "background 0.22s, color 0.22s",
               }}
             >
               Connect
-            </button>
+            </motion.button>
           )
         )}
 
@@ -331,9 +392,9 @@ function Topbar({
         <div
           style={{
             fontFamily: "var(--mono)",
-            fontSize: 9,
-            padding: "3px 10px",
-            borderRadius: 6,
+            fontSize: 10,
+            padding: "4px 12px",
+            borderRadius: 7,
             border: "1px solid var(--pb)",
             color: "var(--purple)",
             background: "var(--pd)",
@@ -343,36 +404,37 @@ function Topbar({
         </div>
 
         {/* Theme toggle */}
-        <button
+        <motion.button
+          whileTap={{ scale: 0.92 }}
           onClick={toggleTheme}
           aria-label="Toggle theme"
           style={{
-            width: 42,
-            height: 22,
-            borderRadius: 11,
+            width: 44,
+            height: 24,
+            borderRadius: 12,
             border: "1px solid var(--b2)",
             background: "var(--s2)",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
             padding: 4,
-            transition: "var(--tr)",
+            transition: "background 0.3s",
           }}
         >
-          <div
+          <motion.div
+            animate={{ x: theme === "light" ? 20 : 0 }}
+            transition={{ type: "spring", stiffness: 400, damping: 26 }}
             style={{
-              width: 13,
-              height: 13,
+              width: 14,
+              height: 14,
               borderRadius: "50%",
               background: "var(--teal)",
-              boxShadow: "0 0 8px var(--teal)",
-              transform: theme === "light" ? "translateX(20px)" : "translateX(0)",
-              transition: "transform 0.38s cubic-bezier(.22,.68,0,1.55)",
+              boxShadow: "0 0 10px var(--teal)",
             }}
           />
-        </button>
-      </div>
-    </header>
+        </motion.button>
+      </motion.div>
+    </motion.header>
   );
 }
 
@@ -390,54 +452,68 @@ function LiveStats() {
     if (a?.identityAddress?.startsWith("0x")) setIdentityAddr(a.identityAddress as `0x${string}`);
   }, []);
 
-  const { mntBalance, isLoading: wLoad }             = useWalletState(walletAddr);
-  const { dailyRemaining, dailyLimit, isLoading: lLoad } = useSpendingLimits(walletAddr, MANTLE_TOKENS.MNT);
-  const { reputation, tokenId, name, isLoading: iLoad }   = useAgentIdentity(identityAddr, walletAddr);
+  const { mntBalance, isLoading: wLoad }                     = useWalletState(walletAddr);
+  const { dailyRemaining, dailyLimit, isLoading: lLoad }     = useSpendingLimits(walletAddr, MANTLE_TOKENS.MNT);
+  const { reputation, tokenId, isLoading: iLoad }            = useAgentIdentity(identityAddr, walletAddr);
 
   const remPct = dailyLimit > 0 ? `${((dailyRemaining / dailyLimit) * 100).toFixed(0)}% remaining` : "not set";
   const hasId  = mounted && tokenId > 0 && tokenId < 10_000_000;
 
   const stats = [
-    { label: "MNT Balance",    value: wLoad ? null : mntBalance,                unit: "MNT",   sub: mounted ? "● connected" : "—" },
-    { label: "Daily Remaining", value: lLoad ? null : dailyRemaining.toFixed(2), unit: "MNT",   sub: remPct },
-    { label: "Active Positions", value: "3",                                      unit: "",       sub: "+1 opened today" },
-    { label: "Reputation",      value: iLoad ? null : hasId ? String(reputation) : "—", unit: hasId ? "/ 1000" : "", sub: hasId ? `ERC-8004 #${tokenId}` : "no identity" },
+    { label: "MNT Balance",     value: wLoad ? null : mntBalance,                       unit: "MNT",      sub: mounted ? "● live on chain" : "—"            },
+    { label: "Daily Remaining", value: lLoad ? null : dailyRemaining.toFixed(2),         unit: "MNT",      sub: remPct                                       },
+    { label: "Open Positions",  value: "3",                                               unit: "",         sub: "+1 opened today"                            },
+    { label: "Reputation",      value: iLoad ? null : hasId ? String(reputation) : "—",  unit: hasId ? "pts" : "", sub: hasId ? `ERC-8004 #${tokenId}` : "no identity" },
   ];
 
   return (
-    <div
+    <motion.div
+      variants={{ show: { transition: { staggerChildren: 0.08 } } }}
+      initial="hidden"
+      animate="show"
       style={{
         display: "grid",
         gridTemplateColumns: "repeat(4,1fr)",
         gap: 1,
         background: "var(--b1)",
-        borderRadius: 14,
+        borderRadius: 16,
         overflow: "hidden",
         border: "1px solid var(--b1)",
-        marginBottom: 16,
+        marginBottom: 18,
       }}
     >
-      {stats.map((s) => (
-        <div key={s.label} style={{ background: "var(--s1)", padding: "14px 18px", backdropFilter: "var(--blur2)" }}>
-          <div style={{ fontFamily: "var(--mono)", fontSize: 8, color: "var(--t3)", letterSpacing: ".14em", textTransform: "uppercase", marginBottom: 9 }}>
+      {stats.map((s, i) => (
+        <motion.div
+          key={s.label}
+          variants={statFade}
+          transition={{ duration: 0.4, ease: [0.22, 0.68, 0, 1.15], delay: i * 0.06 }}
+          style={{ background: "var(--s1)", padding: "16px 20px", backdropFilter: "var(--blur2)" }}
+        >
+          <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--t3)", letterSpacing: ".18em", textTransform: "uppercase", marginBottom: 10 }}>
             {s.label}
           </div>
           {s.value === null ? (
-            <div className="loading-shimmer" style={{ height: 24, width: 80, borderRadius: 4, marginBottom: 4 }} />
+            <div className="loading-shimmer" style={{ height: 28, width: 90, borderRadius: 6, marginBottom: 6 }} />
           ) : (
-            <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
-              <span style={{ fontFamily: "var(--mono)", fontSize: 22, fontWeight: 400, color: "var(--t1)", letterSpacing: "-.02em", lineHeight: 1 }}>
+            <motion.div
+              key={s.value}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: [0.22, 0.68, 0, 1.15] }}
+              style={{ display: "flex", alignItems: "baseline", gap: 5, marginBottom: 5 }}
+            >
+              <span style={{ fontFamily: "var(--mono)", fontSize: 26, fontWeight: 400, color: "var(--t1)", letterSpacing: "-.03em", lineHeight: 1 }}>
                 {s.value}
               </span>
               {s.unit && (
-                <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--t3)" }}>{s.unit}</span>
+                <span style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--t3)" }}>{s.unit}</span>
               )}
-            </div>
+            </motion.div>
           )}
-          <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--t3)" }}>{s.sub}</div>
-        </div>
+          <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--t3)" }}>{s.sub}</div>
+        </motion.div>
       ))}
-    </div>
+    </motion.div>
   );
 }
 
@@ -446,29 +522,85 @@ function LiveStats() {
 function ConfigSection() {
   const [open, setOpen] = useState(false);
   return (
-    <div style={{ marginBottom: 12 }}>
-      <button
+    <div style={{ marginBottom: 10 }}>
+      <motion.button
+        whileHover={{ borderColor: "var(--b2)", color: "var(--t2)" }}
+        whileTap={{ scale: 0.97 }}
         onClick={() => setOpen((o) => !o)}
         style={{
           fontFamily: "var(--mono)",
-          fontSize: 9,
-          padding: "4px 12px",
-          borderRadius: 6,
+          fontSize: 10,
+          padding: "5px 14px",
+          borderRadius: 7,
           border: "1px solid var(--b1)",
           color: "var(--t3)",
           background: "var(--s1)",
           cursor: "pointer",
           display: "flex",
           alignItems: "center",
-          gap: 6,
-          transition: "var(--tr)",
-          marginBottom: open ? 8 : 0,
+          gap: 7,
+          transition: "border-color 0.22s, color 0.22s",
+          marginBottom: open ? 10 : 0,
         }}
       >
         <span>⚙</span> Contract Config {open ? "▲" : "▼"}
-      </button>
-      {open && <ContractConfigPanel />}
+      </motion.button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.3, ease: [0.22, 0.68, 0, 1.15] }}
+            style={{ overflow: "hidden" }}
+          >
+            <ContractConfigPanel />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
+  );
+}
+
+// ─── Page header ─────────────────────────────────────────────────────────────────
+
+function PageHeader({ title, sub, badge, badgeColor = "teal" }: {
+  title: string;
+  sub: string;
+  badge?: string;
+  badgeColor?: "teal" | "purple";
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.38, ease: [0.22, 0.68, 0, 1.15] }}
+      style={{ marginBottom: 18, display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}
+    >
+      <div>
+        <div style={{ fontFamily: "var(--sans)", fontSize: 30, fontWeight: 800, letterSpacing: "-.02em", color: "var(--t1)", lineHeight: 1.1 }}>
+          {title}
+        </div>
+        <div style={{ fontFamily: "var(--mono)", fontSize: 12, color: "var(--t3)", marginTop: 5 }}>
+          {sub}
+        </div>
+      </div>
+      {badge && (
+        <span style={{
+          fontFamily: "var(--mono)",
+          fontSize: 10,
+          padding: "4px 12px",
+          borderRadius: 6,
+          border: `1px solid ${badgeColor === "teal" ? "var(--tb)" : "var(--pb)"}`,
+          color: badgeColor === "teal" ? "var(--teal)" : "var(--purple)",
+          background: badgeColor === "teal" ? "var(--td)" : "var(--pd)",
+          flexShrink: 0,
+          marginTop: 4,
+        }}>
+          {badge}
+        </span>
+      )}
+    </motion.div>
   );
 }
 
@@ -476,13 +608,13 @@ function ConfigSection() {
 
 function TradingPage() {
   return (
-    <div className="page-enter">
-      <div style={{ marginBottom: 4 }}>
-        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.02em", color: "var(--t1)" }}>AI Trading Desk</div>
-        <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--t3)", marginTop: 3 }}>
-          RSI(14) + EMA(9/21) · Risk-managed via TradingVault · Bybit v5 API
-        </div>
-      </div>
+    <div>
+      <PageHeader
+        title="AI Trading Desk"
+        sub="RSI(14) + EMA(9/21) · Risk-managed via TradingVault · Bybit v5 API"
+        badge="Track 01 · AI Trading"
+        badgeColor="teal"
+      />
       <LiveStats />
       <TradingPanel />
     </div>
@@ -491,36 +623,59 @@ function TradingPage() {
 
 function IdentityPage() {
   return (
-    <div className="page-enter">
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.02em", color: "var(--t1)" }}>On-chain Identity</div>
-        <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--t3)", marginTop: 3 }}>
-          ERC-8004 soulbound agent identity · 6 Byreal-compatible skill executors
-        </div>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 13 }}>
-        <IdentityPanel />
-        <SkillsPanel />
-      </div>
+    <div>
+      <PageHeader
+        title="On-chain Identity"
+        sub="ERC-8004 soulbound agent NFT · reputation grows with every on-chain action"
+        badge="ERC-8004"
+        badgeColor="purple"
+      />
+      <motion.div
+        variants={{ show: { transition: { staggerChildren: 0.1 } } }}
+        initial="hidden"
+        animate="show"
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}
+      >
+        {[<IdentityPanel key="id" />, <SkillsPanel key="sk" />].map((el, i) => (
+          <motion.div
+            key={i}
+            variants={{ hidden: { opacity: 0, y: 14, scale: 0.98 }, show: { opacity: 1, y: 0, scale: 1 } }}
+            transition={{ duration: 0.42, ease: [0.22, 0.68, 0, 1.15] }}
+          >
+            {el}
+          </motion.div>
+        ))}
+      </motion.div>
     </div>
   );
 }
 
 function AgentPage() {
   return (
-    <div className="page-enter">
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.02em", color: "var(--t1)" }}>Agent Terminal</div>
-        <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--t3)", marginTop: 3 }}>
-          Live MCP agent · 12 tools · query balances, market data, identity, trigger on-chain actions
-        </div>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 13 }}>
-        <AgentChatPanel />
-        <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
+    <div>
+      <PageHeader
+        title="Agent Terminal"
+        sub="Live MCP agent · 12 tools · query balances, market data, identity, trigger on-chain actions"
+        badge="MCP · 12 tools"
+        badgeColor="teal"
+      />
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 14 }}>
+        <motion.div
+          initial={{ opacity: 0, x: -14 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.42, ease: [0.22, 0.68, 0, 1.15] }}
+        >
+          <AgentChatPanel />
+        </motion.div>
+        <motion.div
+          initial={{ opacity: 0, x: 14 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.42, delay: 0.08, ease: [0.22, 0.68, 0, 1.15] }}
+          style={{ display: "flex", flexDirection: "column", gap: 14 }}
+        >
           <GuardianControlPanel />
           <AuditTrailPanel />
-        </div>
+        </motion.div>
       </div>
     </div>
   );
@@ -528,23 +683,34 @@ function AgentPage() {
 
 function DefiPage() {
   return (
-    <div className="page-enter">
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.02em", color: "var(--t1)" }}>DeFi &amp; Yield</div>
-        <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--t3)", marginTop: 3 }}>
-          Policy-enforced spending limits · mETH liquid staking 4.5% APY · Mantle LSP
-        </div>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 13 }}>
-        <SpendingLimitsPanel />
-        <YieldPanel />
-        <TokenPolicyPanel />
-      </div>
+    <div>
+      <PageHeader
+        title="DeFi & Yield"
+        sub="Policy-enforced spending limits · mETH liquid staking 4.5% APY · Mantle LSP"
+        badge="Mantle ecosystem"
+        badgeColor="teal"
+      />
+      <motion.div
+        variants={{ show: { transition: { staggerChildren: 0.09 } } }}
+        initial="hidden"
+        animate="show"
+        style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 14 }}
+      >
+        {[<SpendingLimitsPanel key="sl" />, <YieldPanel key="y" />, <TokenPolicyPanel key="tp" />].map((el, i) => (
+          <motion.div
+            key={i}
+            variants={{ hidden: { opacity: 0, y: 14, scale: 0.98 }, show: { opacity: 1, y: 0, scale: 1 } }}
+            transition={{ duration: 0.4, ease: [0.22, 0.68, 0, 1.15] }}
+          >
+            {el}
+          </motion.div>
+        ))}
+      </motion.div>
     </div>
   );
 }
 
-// ─── Dashboard ───────────────────────────────────────────────────────────────────
+// ─── Dashboard root ───────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
   const [page, setPage]   = useState<Page>("trading");
@@ -573,23 +739,38 @@ export default function DashboardPage() {
       className={theme}
       style={{
         display: "grid",
-        gridTemplateColumns: "220px 1fr",
-        gridTemplateRows: "56px 1fr",
+        gridTemplateColumns: "230px 1fr",
+        gridTemplateRows: "60px 1fr",
         height: "100vh",
         overflow: "hidden",
         background: "var(--bg)",
         position: "relative",
       }}
     >
-      {/* Ambient orbs */}
+      {/* Ambient orbs — animated */}
       <div
+        className="orb-a"
         style={{
           position: "fixed",
-          width: 800,
-          height: 800,
-          top: -300,
-          left: -150,
-          background: "radial-gradient(circle, rgba(0,229,160,0.065) 0%, transparent 65%)",
+          width: 900,
+          height: 900,
+          top: -320,
+          left: -180,
+          background: "radial-gradient(circle, rgba(0,229,160,0.07) 0%, transparent 65%)",
+          borderRadius: "50%",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+      <div
+        className="orb-b"
+        style={{
+          position: "fixed",
+          width: 700,
+          height: 700,
+          top: "20%",
+          right: -140,
+          background: "radial-gradient(circle, rgba(167,139,250,0.065) 0%, transparent 65%)",
           borderRadius: "50%",
           pointerEvents: "none",
           zIndex: 0,
@@ -598,14 +779,15 @@ export default function DashboardPage() {
       <div
         style={{
           position: "fixed",
-          width: 600,
-          height: 600,
-          top: "25%",
-          right: -120,
-          background: "radial-gradient(circle, rgba(167,139,250,0.06) 0%, transparent 65%)",
+          width: 500,
+          height: 500,
+          bottom: -100,
+          left: "38%",
+          background: "radial-gradient(circle, rgba(0,120,255,0.035) 0%, transparent 65%)",
           borderRadius: "50%",
           pointerEvents: "none",
           zIndex: 0,
+          animation: "orbDriftB 28s ease-in-out infinite reverse",
         }}
       />
 
@@ -619,10 +801,10 @@ export default function DashboardPage() {
       <main
         style={{
           overflow: "auto",
-          padding: 20,
+          padding: "22px 24px",
           display: "flex",
           flexDirection: "column",
-          gap: 13,
+          gap: 0,
           position: "relative",
           zIndex: 1,
         }}
@@ -632,10 +814,11 @@ export default function DashboardPage() {
         <AnimatePresence mode="wait">
           <motion.div
             key={page}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.22, ease: [0.22, 0.68, 0, 1.15] }}
+            variants={fadeUpBlur}
+            initial="hidden"
+            animate="show"
+            exit={{ opacity: 0, scale: 0.98, filter: "blur(4px)", y: -8 }}
+            transition={{ duration: 0.38, ease: [0.22, 0.68, 0, 1.15] }}
           >
             <PageComponent />
           </motion.div>
