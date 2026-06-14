@@ -1,49 +1,385 @@
 "use client";
 
-import { motion, AnimatePresence } from "framer-motion";
-import { useAccount } from "wagmi";
-import { useEffect, useState, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect, useCallback, Suspense } from "react";
+import { useAccount, useConnect, useDisconnect } from "wagmi";
+import { injected } from "wagmi/connectors";
+import { AnimatePresence, motion } from "framer-motion";
 
-import { OverviewPanel }        from "@/components/panels/OverviewPanel";
-import { SpendingLimitsPanel }  from "@/components/panels/SpendingLimitsPanel";
-import { TokenPolicyPanel }     from "@/components/panels/TokenPolicyPanel";
 import { TradingPanel }         from "@/components/panels/TradingPanel";
 import { IdentityPanel }        from "@/components/panels/IdentityPanel";
 import { SkillsPanel }          from "@/components/panels/SkillsPanel";
 import { YieldPanel }           from "@/components/panels/YieldPanel";
-import { AuditTrailPanel }      from "@/components/panels/AuditTrailPanel";
-import { GuardianControlPanel } from "@/components/panels/GuardianControlPanel";
+import { SpendingLimitsPanel }  from "@/components/panels/SpendingLimitsPanel";
+import { TokenPolicyPanel }     from "@/components/panels/TokenPolicyPanel";
 import { AgentChatPanel }       from "@/components/panels/AgentChatPanel";
-import { ConnectWalletBanner }  from "@/components/shared/ConnectWalletBanner";
+import { GuardianControlPanel } from "@/components/panels/GuardianControlPanel";
+import { AuditTrailPanel }      from "@/components/panels/AuditTrailPanel";
 import { ContractConfigPanel }  from "@/components/shared/ContractConfigPanel";
 
 import {
-  useWalletState,
   useAgentIdentity,
+  useWalletState,
   useSpendingLimits,
   MANTLE_TOKENS,
 } from "@/hooks/useContractState";
 import { getContractAddresses } from "@/lib/config";
 
-// ─── Types ─────────────────────────────────────────────────────────────────────
+type Page = "trading" | "identity" | "agent" | "defi";
 
-type TabId = "overview" | "trading" | "defi" | "identity" | "agent";
+// ─── Sidebar ────────────────────────────────────────────────────────────────────
 
-const TABS: { id: TabId; label: string }[] = [
-  { id: "overview",  label: "Overview"     },
-  { id: "trading",   label: "Trading"      },
-  { id: "defi",      label: "DeFi & Yield" },
-  { id: "identity",  label: "Identity"     },
-  { id: "agent",     label: "Agent"        },
+const SB_MAIN = [
+  { id: "trading",  icon: "◎", label: "Trading",       badge: "LIVE" },
+  { id: "identity", icon: "⬡", label: "Identity",      badge: null   },
+  { id: "defi",     icon: "⬟", label: "DeFi & Yield",  badge: null   },
+  { id: "agent",    icon: "⊕", label: "Agent Terminal", badge: null   },
+] as const;
+
+const SB_SYS: { icon: string; label: string; target: Page }[] = [
+  { icon: "◻", label: "Guardian",    target: "agent"    },
+  { icon: "⊞", label: "Skills",      target: "identity" },
+  { icon: "◷", label: "Audit Trail", target: "agent"    },
 ];
 
-// ─── Stats Bar ─────────────────────────────────────────────────────────────────
-// Rendered as a unified ruled table — not 4 separate floating cards.
+function Sidebar({
+  active,
+  onNav,
+  walletShort,
+}: {
+  active: Page;
+  onNav: (p: Page) => void;
+  walletShort: string;
+}) {
+  return (
+    <aside
+      style={{
+        background: "var(--s1)",
+        borderRight: "1px solid var(--b1)",
+        backdropFilter: "var(--blur)",
+        WebkitBackdropFilter: "var(--blur)",
+        padding: "18px 13px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 3,
+        overflowY: "auto",
+      }}
+    >
+      <div style={{ fontFamily: "var(--mono)", fontSize: 8, color: "var(--t4)", letterSpacing: ".18em", textTransform: "uppercase", padding: "12px 10px 5px" }}>
+        Main
+      </div>
 
-function LiveStatsBar() {
+      {SB_MAIN.map((item) => {
+        const isOn = active === item.id;
+        return (
+          <button
+            key={item.id}
+            onClick={() => onNav(item.id as Page)}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              padding: "10px 13px",
+              borderRadius: 10,
+              cursor: "pointer",
+              fontSize: 13.5,
+              fontWeight: 500,
+              color: isOn ? "var(--teal)" : "var(--t2)",
+              background: isOn ? "var(--tg)" : "none",
+              border: `1px solid ${isOn ? "var(--tb)" : "transparent"}`,
+              transition: "all 0.25s var(--ease)",
+              textAlign: "left",
+              width: "100%",
+            }}
+            onMouseEnter={(e) => {
+              if (!isOn) {
+                (e.currentTarget as HTMLElement).style.background = "var(--s2)";
+                (e.currentTarget as HTMLElement).style.color = "var(--t1)";
+                (e.currentTarget as HTMLElement).style.borderColor = "var(--b1)";
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (!isOn) {
+                (e.currentTarget as HTMLElement).style.background = "none";
+                (e.currentTarget as HTMLElement).style.color = "var(--t2)";
+                (e.currentTarget as HTMLElement).style.borderColor = "transparent";
+              }
+            }}
+          >
+            <span style={{ fontSize: 14, width: 16, textAlign: "center", flexShrink: 0 }}>{item.icon}</span>
+            <span style={{ flex: 1 }}>{item.label}</span>
+            {item.badge && (
+              <span style={{ marginLeft: "auto", fontFamily: "var(--mono)", fontSize: 7, padding: "2px 5px", borderRadius: 3, background: "var(--td)", border: "1px solid var(--tb)", color: "var(--teal)" }}>
+                {item.badge}
+              </span>
+            )}
+          </button>
+        );
+      })}
+
+      <div style={{ fontFamily: "var(--mono)", fontSize: 8, color: "var(--t4)", letterSpacing: ".18em", textTransform: "uppercase", padding: "12px 10px 5px" }}>
+        System
+      </div>
+
+      {SB_SYS.map((item) => (
+        <button
+          key={item.label}
+          onClick={() => onNav(item.target)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            padding: "10px 13px",
+            borderRadius: 10,
+            cursor: "pointer",
+            fontSize: 13.5,
+            fontWeight: 500,
+            color: "var(--t2)",
+            background: "none",
+            border: "1px solid transparent",
+            transition: "all 0.25s var(--ease)",
+            textAlign: "left",
+            width: "100%",
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.background = "var(--s2)";
+            (e.currentTarget as HTMLElement).style.color = "var(--t1)";
+            (e.currentTarget as HTMLElement).style.borderColor = "var(--b1)";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.background = "none";
+            (e.currentTarget as HTMLElement).style.color = "var(--t2)";
+            (e.currentTarget as HTMLElement).style.borderColor = "transparent";
+          }}
+        >
+          <span style={{ fontSize: 14, width: 16, textAlign: "center", flexShrink: 0 }}>{item.icon}</span>
+          {item.label}
+        </button>
+      ))}
+
+      {/* Footer */}
+      <div style={{ marginTop: "auto", paddingTop: 13, borderTop: "1px solid var(--b1)" }}>
+        <div
+          style={{
+            background: "var(--s2)",
+            border: "1px solid var(--b1)",
+            borderRadius: 9,
+            padding: "11px 13px",
+            backdropFilter: "var(--blur2)",
+          }}
+        >
+          <div style={{ fontFamily: "var(--mono)", fontSize: 7, color: "var(--t3)", letterSpacing: ".1em", textTransform: "uppercase", marginBottom: 5 }}>
+            Agent Wallet
+          </div>
+          <div style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--teal)" }}>
+            {walletShort || "0x013b…d0deF"}
+          </div>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+// ─── Topbar ─────────────────────────────────────────────────────────────────────
+
+function Topbar({
+  active,
+  onNav,
+  theme,
+  toggleTheme,
+}: {
+  active: Page;
+  onNav: (p: Page) => void;
+  theme: "dark" | "light";
+  toggleTheme: () => void;
+}) {
+  const { address, isConnected } = useAccount();
+  const { connect }    = useConnect();
+  const { disconnect } = useDisconnect();
   const [mounted, setMounted] = useState(false);
-  const { address: connectedAddress } = useAccount();
+  useEffect(() => setMounted(true), []);
+
+  const pages: { id: Page; label: string }[] = [
+    { id: "trading",  label: "Trading"  },
+    { id: "identity", label: "Identity" },
+    { id: "agent",    label: "Agent"    },
+    { id: "defi",     label: "DeFi"     },
+  ];
+
+  const short = address ? `${address.slice(0, 6)}…${address.slice(-4)}` : "";
+
+  return (
+    <header
+      style={{
+        gridColumn: "1 / -1",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        padding: "0 22px",
+        background: "var(--s1)",
+        borderBottom: "1px solid var(--b1)",
+        backdropFilter: "var(--blur)",
+        WebkitBackdropFilter: "var(--blur)",
+        boxShadow: "var(--sh2)",
+        transition: "var(--tr)",
+      }}
+    >
+      {/* Left: Logo + Nav pills */}
+      <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ fontFamily: "var(--mono)", fontSize: 15, fontWeight: 700, letterSpacing: ".05em", color: "var(--t1)" }}>
+          MANTLE<span style={{ color: "var(--teal)" }}>/</span>AGENT
+        </div>
+
+        <nav
+          style={{
+            display: "flex",
+            gap: 3,
+            background: "var(--s2)",
+            border: "1px solid var(--b1)",
+            borderRadius: 22,
+            padding: 4,
+            backdropFilter: "var(--blur2)",
+          }}
+        >
+          {pages.map((p) => {
+            const isOn = active === p.id;
+            return (
+              <button
+                key={p.id}
+                onClick={() => onNav(p.id)}
+                style={{
+                  fontSize: 13,
+                  fontWeight: isOn ? 600 : 500,
+                  padding: "6px 20px",
+                  borderRadius: 18,
+                  color: isOn ? "#000" : "var(--t2)",
+                  background: isOn ? "var(--teal)" : "none",
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "all 0.32s var(--ease)",
+                  boxShadow: isOn ? "0 4px 16px rgba(0,229,160,0.28)" : "none",
+                }}
+              >
+                {p.label}
+              </button>
+            );
+          })}
+        </nav>
+      </div>
+
+      {/* Right: chips + toggle */}
+      <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+        {/* Sepolia live */}
+        <div
+          style={{
+            fontFamily: "var(--mono)",
+            fontSize: 9,
+            padding: "3px 10px",
+            borderRadius: 6,
+            border: "1px solid var(--tb)",
+            color: "var(--teal)",
+            background: "var(--td)",
+            display: "flex",
+            alignItems: "center",
+            gap: 5,
+          }}
+        >
+          <div className="live-dot" />
+          Sepolia · 5003
+        </div>
+
+        {/* Wallet */}
+        {mounted && (
+          isConnected && address ? (
+            <button
+              onClick={() => disconnect()}
+              style={{
+                fontFamily: "var(--mono)",
+                fontSize: 9,
+                padding: "3px 10px",
+                borderRadius: 6,
+                border: "1px solid var(--b1)",
+                color: "var(--t3)",
+                background: "var(--s2)",
+                cursor: "pointer",
+                transition: "var(--tr)",
+              }}
+              title="Click to disconnect"
+            >
+              {short}
+            </button>
+          ) : (
+            <button
+              onClick={() => connect({ connector: injected() })}
+              style={{
+                fontFamily: "var(--mono)",
+                fontSize: 9,
+                padding: "3px 10px",
+                borderRadius: 6,
+                border: "1px solid var(--tb)",
+                color: "var(--teal)",
+                background: "var(--td)",
+                cursor: "pointer",
+                transition: "var(--tr)",
+              }}
+            >
+              Connect
+            </button>
+          )
+        )}
+
+        {/* ERC-8004 badge */}
+        <div
+          style={{
+            fontFamily: "var(--mono)",
+            fontSize: 9,
+            padding: "3px 10px",
+            borderRadius: 6,
+            border: "1px solid var(--pb)",
+            color: "var(--purple)",
+            background: "var(--pd)",
+          }}
+        >
+          ERC-8004
+        </div>
+
+        {/* Theme toggle */}
+        <button
+          onClick={toggleTheme}
+          aria-label="Toggle theme"
+          style={{
+            width: 42,
+            height: 22,
+            borderRadius: 11,
+            border: "1px solid var(--b2)",
+            background: "var(--s2)",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            padding: 4,
+            transition: "var(--tr)",
+          }}
+        >
+          <div
+            style={{
+              width: 13,
+              height: 13,
+              borderRadius: "50%",
+              background: "var(--teal)",
+              boxShadow: "0 0 8px var(--teal)",
+              transform: theme === "light" ? "translateX(20px)" : "translateX(0)",
+              transition: "transform 0.38s cubic-bezier(.22,.68,0,1.55)",
+            }}
+          />
+        </button>
+      </div>
+    </header>
+  );
+}
+
+// ─── Live Stats Bar ──────────────────────────────────────────────────────────────
+
+function LiveStats() {
+  const [mounted, setMounted] = useState(false);
   const [walletAddr,   setWalletAddr]   = useState<`0x${string}` | undefined>();
   const [identityAddr, setIdentityAddr] = useState<`0x${string}` | undefined>();
 
@@ -54,267 +390,152 @@ function LiveStatsBar() {
     if (a?.identityAddress?.startsWith("0x")) setIdentityAddr(a.identityAddress as `0x${string}`);
   }, []);
 
-  const { mntBalance, isLoading: wLoading } = useWalletState(walletAddr ?? connectedAddress);
-  const { dailyRemaining, dailyLimit, isLoading: lLoading } = useSpendingLimits(walletAddr, MANTLE_TOKENS.MNT);
-  const { reputation, isLoading: iLoading } = useAgentIdentity(identityAddr, walletAddr);
+  const { mntBalance, isLoading: wLoad }             = useWalletState(walletAddr);
+  const { dailyRemaining, dailyLimit, isLoading: lLoad } = useSpendingLimits(walletAddr, MANTLE_TOKENS.MNT);
+  const { reputation, tokenId, name, isLoading: iLoad }   = useAgentIdentity(identityAddr, walletAddr);
 
-  const remPct =
-    dailyLimit > 0
-      ? `${((dailyRemaining / dailyLimit) * 100).toFixed(0)}% remaining`
-      : "not configured";
+  const remPct = dailyLimit > 0 ? `${((dailyRemaining / dailyLimit) * 100).toFixed(0)}% remaining` : "not set";
+  const hasId  = mounted && tokenId > 0 && tokenId < 10_000_000;
 
   const stats = [
-    {
-      label: "MNT Balance",
-      value: wLoading  ? null : mntBalance,
-      unit:  "MNT",
-      sub:   mounted && connectedAddress ? "connected" : "connect wallet to see balance",
-    },
-    {
-      label: "Daily Remaining",
-      value: lLoading ? null : dailyRemaining.toFixed(2),
-      unit:  "MNT",
-      sub:   remPct,
-    },
-    {
-      label: "Active Positions",
-      value: "3",
-      unit:  "",
-      sub:   "+1 opened today",
-    },
-    {
-      label: "Reputation",
-      value: iLoading ? null : reputation > 0 ? String(reputation) : "—",
-      unit:  reputation > 0 ? "/ 1000" : "",
-      sub:   reputation > 0 ? "recorded on-chain" : "no identity configured",
-    },
+    { label: "MNT Balance",    value: wLoad ? null : mntBalance,                unit: "MNT",   sub: mounted ? "● connected" : "—" },
+    { label: "Daily Remaining", value: lLoad ? null : dailyRemaining.toFixed(2), unit: "MNT",   sub: remPct },
+    { label: "Active Positions", value: "3",                                      unit: "",       sub: "+1 opened today" },
+    { label: "Reputation",      value: iLoad ? null : hasId ? String(reputation) : "—", unit: hasId ? "/ 1000" : "", sub: hasId ? `ERC-8004 #${tokenId}` : "no identity" },
   ];
 
   return (
     <div
-      className="grid grid-cols-2 lg:grid-cols-4 rounded-xl overflow-hidden mb-8"
       style={{
-        border: "1px solid var(--color-border)",
-        background: "var(--color-border)",
-        gap: "1px",
+        display: "grid",
+        gridTemplateColumns: "repeat(4,1fr)",
+        gap: 1,
+        background: "var(--b1)",
+        borderRadius: 14,
+        overflow: "hidden",
+        border: "1px solid var(--b1)",
+        marginBottom: 16,
       }}
     >
       {stats.map((s) => (
-        <div
-          key={s.label}
-          className="px-5 py-4"
-          style={{ background: "var(--color-surface)" }}
-        >
-          <div
-            className="text-[10px] font-semibold uppercase tracking-widest mb-3"
-            style={{ color: "var(--color-text-muted)" }}
-          >
+        <div key={s.label} style={{ background: "var(--s1)", padding: "14px 18px", backdropFilter: "var(--blur2)" }}>
+          <div style={{ fontFamily: "var(--mono)", fontSize: 8, color: "var(--t3)", letterSpacing: ".14em", textTransform: "uppercase", marginBottom: 9 }}>
             {s.label}
           </div>
-
-          {!mounted || s.value === null ? (
-            <div className="loading-shimmer rounded h-7 w-24 mb-1" />
+          {s.value === null ? (
+            <div className="loading-shimmer" style={{ height: 24, width: 80, borderRadius: 4, marginBottom: 4 }} />
           ) : (
-            <div className="flex items-baseline gap-1.5 mb-1">
-              <span
-                className="text-[22px] font-mono font-semibold leading-none"
-                style={{ color: "var(--color-text-primary)" }}
-              >
+            <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 4 }}>
+              <span style={{ fontFamily: "var(--mono)", fontSize: 22, fontWeight: 400, color: "var(--t1)", letterSpacing: "-.02em", lineHeight: 1 }}>
                 {s.value}
               </span>
               {s.unit && (
-                <span
-                  className="text-xs font-sans"
-                  style={{ color: "var(--color-text-muted)" }}
-                >
-                  {s.unit}
-                </span>
+                <span style={{ fontFamily: "var(--mono)", fontSize: 10, color: "var(--t3)" }}>{s.unit}</span>
               )}
             </div>
           )}
-
-          <div
-            className="text-xs mt-1"
-            style={{ color: "var(--color-text-muted)" }}
-          >
-            {s.sub}
-          </div>
+          <div style={{ fontFamily: "var(--mono)", fontSize: 9, color: "var(--t3)" }}>{s.sub}</div>
         </div>
       ))}
     </div>
   );
 }
 
-// ─── Agent Status Line ──────────────────────────────────────────────────────────
+// ─── Config Toggle ───────────────────────────────────────────────────────────────
 
-function AgentStatusLine() {
-  const [mounted, setMounted] = useState(false);
-  const [walletAddr,   setWalletAddr]   = useState<`0x${string}` | undefined>();
-  const [identityAddr, setIdentityAddr] = useState<`0x${string}` | undefined>();
-
-  useEffect(() => {
-    setMounted(true);
-    const a = getContractAddresses();
-    if (a?.walletAddress?.startsWith("0x"))   setWalletAddr(a.walletAddress as `0x${string}`);
-    if (a?.identityAddress?.startsWith("0x")) setIdentityAddr(a.identityAddress as `0x${string}`);
-  }, []);
-
-  const { tokenId, name, reputation } = useAgentIdentity(identityAddr, walletAddr);
-  const hasToken = mounted && tokenId > 0 && tokenId < 10_000_000;
-  const dispName = mounted && name?.trim() ? name : "Mantle AI Agent";
-  const dispRep  = mounted && reputation > 0 ? reputation : null;
-
+function ConfigSection() {
+  const [open, setOpen] = useState(false);
   return (
-    <div
-      className="flex items-center gap-2 text-xs font-mono mt-1.5"
-      style={{ color: "var(--color-text-muted)" }}
-    >
-      <span className="live-dot" />
-      <span style={{ color: "var(--color-green)" }}>Live on Mantle</span>
-
-      {mounted && (
-        <>
-          <span style={{ opacity: 0.3 }}>·</span>
-          <span>ERC-8004{hasToken ? ` #${tokenId}` : ""}</span>
-          <span style={{ opacity: 0.3 }}>·</span>
-          <span>{dispName}</span>
-          {dispRep !== null && (
-            <>
-              <span style={{ opacity: 0.3 }}>·</span>
-              <span>Rep {dispRep}</span>
-            </>
-          )}
-        </>
-      )}
+    <div style={{ marginBottom: 12 }}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        style={{
+          fontFamily: "var(--mono)",
+          fontSize: 9,
+          padding: "4px 12px",
+          borderRadius: 6,
+          border: "1px solid var(--b1)",
+          color: "var(--t3)",
+          background: "var(--s1)",
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          transition: "var(--tr)",
+          marginBottom: open ? 8 : 0,
+        }}
+      >
+        <span>⚙</span> Contract Config {open ? "▲" : "▼"}
+      </button>
+      {open && <ContractConfigPanel />}
     </div>
   );
 }
 
-// ─── Tab Navigation ─────────────────────────────────────────────────────────────
+// ─── Tab pages ───────────────────────────────────────────────────────────────────
 
-function TabNavigation({ active, onChange }: { active: TabId; onChange: (t: TabId) => void }) {
+function TradingPage() {
   return (
-    <div className="tab-nav mb-8">
-      {TABS.map(({ id, label }) => {
-        const isActive = active === id;
-        return (
-          <button
-            key={id}
-            onClick={() => onChange(id)}
-            className="relative px-5 py-3 text-sm font-medium transition-colors duration-150 whitespace-nowrap outline-none flex-shrink-0"
-            style={{ color: isActive ? "var(--color-text-primary)" : "var(--color-text-secondary)" }}
-          >
-            {label}
-            {isActive && (
-              <motion.div
-                layoutId="tab-underline"
-                className="absolute bottom-0 left-0 right-0 h-0.5"
-                style={{ background: "var(--color-green)" }}
-                transition={{ type: "spring", stiffness: 500, damping: 42 }}
-              />
-            )}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-// ─── Section Header ─────────────────────────────────────────────────────────────
-
-function SectionHeader({
-  title,
-  subtitle,
-  badge,
-  badgeColor = "green",
-}: {
-  title: string;
-  subtitle: string;
-  badge?: string;
-  badgeColor?: "green" | "blue" | "purple" | "amber";
-}) {
-  const colors = {
-    green:  { bg: "rgba(0,212,170,0.06)",   border: "rgba(0,212,170,0.18)",  text: "var(--color-green)" },
-    blue:   { bg: "rgba(96,165,250,0.06)",  border: "rgba(96,165,250,0.18)", text: "#93c5fd" },
-    purple: { bg: "rgba(124,58,237,0.06)",  border: "rgba(124,58,237,0.18)", text: "#a78bfa" },
-    amber:  { bg: "rgba(245,158,11,0.06)",  border: "rgba(245,158,11,0.18)", text: "#fbbf24" },
-  }[badgeColor];
-
-  return (
-    <div className="flex items-start justify-between mb-6">
-      <div>
-        <h2
-          className="text-[15px] font-semibold tracking-tight"
-          style={{ color: "var(--color-text-primary)" }}
-        >
-          {title}
-        </h2>
-        <p
-          className="text-xs mt-0.5"
-          style={{ color: "var(--color-text-secondary)" }}
-        >
-          {subtitle}
-        </p>
+    <div className="page-enter">
+      <div style={{ marginBottom: 4 }}>
+        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.02em", color: "var(--t1)" }}>AI Trading Desk</div>
+        <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--t3)", marginTop: 3 }}>
+          RSI(14) + EMA(9/21) · Risk-managed via TradingVault · Bybit v5 API
+        </div>
       </div>
-      {badge && (
-        <span
-          className="text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded flex-shrink-0"
-          style={{
-            background: colors.bg,
-            border: `1px solid ${colors.border}`,
-            color: colors.text,
-          }}
-        >
-          {badge}
-        </span>
-      )}
-    </div>
-  );
-}
-
-// ─── Tab Contents ────────────────────────────────────────────────────────────────
-
-function OverviewTab() {
-  return (
-    <div>
-      <SectionHeader
-        title="Wallet overview"
-        subtitle="Live balances, spending policy, and on-chain agent actions"
-        badge="Live on Mantle"
-      />
-      <LiveStatsBar />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <OverviewPanel />
-        <AuditTrailPanel />
-      </div>
-    </div>
-  );
-}
-
-function TradingTabContent() {
-  return (
-    <div>
-      <SectionHeader
-        title="AI trading engine"
-        subtitle="Bybit v5 market data · Kelly criterion position sizing · on-chain execution via TradingVault"
-        badge="Bybit v5 API"
-        badgeColor="blue"
-      />
+      <LiveStats />
       <TradingPanel />
     </div>
   );
 }
 
-function DeFiTab() {
+function IdentityPage() {
   return (
-    <div>
-      <SectionHeader
-        title="DeFi & yield"
-        subtitle="Policy-enforced spending limits, mETH liquid staking (4.5% APY), and token access policies"
-        badge="Mantle ecosystem"
-        badgeColor="purple"
-      />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+    <div className="page-enter">
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.02em", color: "var(--t1)" }}>On-chain Identity</div>
+        <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--t3)", marginTop: 3 }}>
+          ERC-8004 soulbound agent identity · 6 Byreal-compatible skill executors
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 13 }}>
+        <IdentityPanel />
+        <SkillsPanel />
+      </div>
+    </div>
+  );
+}
+
+function AgentPage() {
+  return (
+    <div className="page-enter">
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.02em", color: "var(--t1)" }}>Agent Terminal</div>
+        <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--t3)", marginTop: 3 }}>
+          Live MCP agent · 12 tools · query balances, market data, identity, trigger on-chain actions
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 320px", gap: 13 }}>
+        <AgentChatPanel />
+        <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
+          <GuardianControlPanel />
+          <AuditTrailPanel />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DefiPage() {
+  return (
+    <div className="page-enter">
+      <div style={{ marginBottom: 14 }}>
+        <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-.02em", color: "var(--t1)" }}>DeFi &amp; Yield</div>
+        <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--t3)", marginTop: 3 }}>
+          Policy-enforced spending limits · mETH liquid staking 4.5% APY · Mantle LSP
+        </div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 13 }}>
         <SpendingLimitsPanel />
         <YieldPanel />
         <TokenPolicyPanel />
@@ -323,107 +544,103 @@ function DeFiTab() {
   );
 }
 
-function IdentityTab() {
-  return (
-    <div>
-      <SectionHeader
-        title="On-chain identity & skills"
-        subtitle="ERC-8004 soulbound agent identity with reputation scoring and 6 Byreal-compatible skill executors"
-        badge="ERC-8004"
-        badgeColor="amber"
-      />
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <IdentityPanel />
-        <SkillsPanel />
-      </div>
-    </div>
-  );
-}
-
-function AgentTab() {
-  return (
-    <div>
-      <SectionHeader
-        title="Agent terminal"
-        subtitle="Live MCP agent with 12 tools — query balances, market data, identity, and trigger on-chain actions"
-        badge="MCP · 12 tools"
-      />
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-2"><AgentChatPanel /></div>
-        <GuardianControlPanel />
-      </div>
-    </div>
-  );
-}
-
-// ─── Page ────────────────────────────────────────────────────────────────────────
-
-const VALID_TABS = new Set<TabId>(["overview", "trading", "defi", "identity", "agent"]);
-
-function DashboardInner() {
-  const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<TabId>(() => {
-    const param = searchParams.get("tab") as TabId | null;
-    return param && VALID_TABS.has(param) ? param : "overview";
-  });
-
-  // sync tab when URL changes (e.g. clicking navbar links)
-  useEffect(() => {
-    const param = searchParams.get("tab") as TabId | null;
-    if (param && VALID_TABS.has(param)) setActiveTab(param);
-  }, [searchParams]);
-
-  return (
-    <div className="min-h-screen px-6 pb-16 max-w-[1600px] mx-auto">
-
-      <div className="pt-6">
-        <ConnectWalletBanner />
-      </div>
-
-      {/* ── Hero ──────────────────────────────────────────────────────────────── */}
-      <div className="pt-8 pb-7">
-        <h1
-          className="text-[26px] font-semibold tracking-tight"
-          style={{ color: "var(--color-text-primary)" }}
-        >
-          Mantle Agent Kit
-        </h1>
-        <AgentStatusLine />
-      </div>
-
-      {/* ── Contract Config ────────────────────────────────────────────────────── */}
-      <div className="mb-6">
-        <ContractConfigPanel />
-      </div>
-
-      {/* ── Tab Navigation ─────────────────────────────────────────────────────── */}
-      <TabNavigation active={activeTab} onChange={setActiveTab} />
-
-      {/* ── Tab Content ────────────────────────────────────────────────────────── */}
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={activeTab}
-          initial={{ opacity: 0, y: 5 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.14, ease: "easeOut" }}
-        >
-          {activeTab === "overview"  && <OverviewTab />}
-          {activeTab === "trading"   && <TradingTabContent />}
-          {activeTab === "defi"      && <DeFiTab />}
-          {activeTab === "identity"  && <IdentityTab />}
-          {activeTab === "agent"     && <AgentTab />}
-        </motion.div>
-      </AnimatePresence>
-
-    </div>
-  );
-}
+// ─── Dashboard ───────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
+  const [page, setPage]   = useState<Page>("trading");
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [walletShort, setWalletShort] = useState("");
+
+  useEffect(() => {
+    const a = getContractAddresses();
+    if (a?.walletAddress) {
+      const addr = a.walletAddress;
+      setWalletShort(`${addr.slice(0, 6)}…${addr.slice(-4)}`);
+    }
+  }, []);
+
+  const toggleTheme = useCallback(() => setTheme((t) => (t === "dark" ? "light" : "dark")), []);
+
+  const PageComponent = {
+    trading:  TradingPage,
+    identity: IdentityPage,
+    agent:    AgentPage,
+    defi:     DefiPage,
+  }[page];
+
   return (
-    <Suspense>
-      <DashboardInner />
-    </Suspense>
+    <div
+      className={theme}
+      style={{
+        display: "grid",
+        gridTemplateColumns: "220px 1fr",
+        gridTemplateRows: "56px 1fr",
+        height: "100vh",
+        overflow: "hidden",
+        background: "var(--bg)",
+        position: "relative",
+      }}
+    >
+      {/* Ambient orbs */}
+      <div
+        style={{
+          position: "fixed",
+          width: 800,
+          height: 800,
+          top: -300,
+          left: -150,
+          background: "radial-gradient(circle, rgba(0,229,160,0.065) 0%, transparent 65%)",
+          borderRadius: "50%",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+      <div
+        style={{
+          position: "fixed",
+          width: 600,
+          height: 600,
+          top: "25%",
+          right: -120,
+          background: "radial-gradient(circle, rgba(167,139,250,0.06) 0%, transparent 65%)",
+          borderRadius: "50%",
+          pointerEvents: "none",
+          zIndex: 0,
+        }}
+      />
+
+      {/* Topbar */}
+      <Topbar active={page} onNav={setPage} theme={theme} toggleTheme={toggleTheme} />
+
+      {/* Sidebar */}
+      <Sidebar active={page} onNav={setPage} walletShort={walletShort} />
+
+      {/* Content */}
+      <main
+        style={{
+          overflow: "auto",
+          padding: 20,
+          display: "flex",
+          flexDirection: "column",
+          gap: 13,
+          position: "relative",
+          zIndex: 1,
+        }}
+      >
+        <ConfigSection />
+
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={page}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.22, ease: [0.22, 0.68, 0, 1.15] }}
+          >
+            <PageComponent />
+          </motion.div>
+        </AnimatePresence>
+      </main>
+    </div>
   );
 }
