@@ -35,11 +35,11 @@ export function OverviewPanel() {
 
   const paused = mounted && isPaused === true;
   const dailyPct = (mounted && dailyLimit > 0) ? (dailySpent / dailyLimit) * 100 : 0;
-  const gaugeColor = dailyPct > 80 ? "#ef4444" : dailyPct > 50 ? "#f59e0b" : "#00d4aa";
+  const gaugeColor = dailyPct > 80 ? "#ef4444" : dailyPct > 50 ? "#f59e0b" : "#00E5A8";
   const circumference = 2 * Math.PI * 60;
 
   const tokens: TokenRow[] = [
-    { symbol: "MNT", amount: mntBalance, icon: "M", color: "#00d4aa" },
+    { symbol: "MNT", amount: mntBalance, icon: "M", color: "#00E5A8" },
     { symbol: "mETH", amount: methBalance, icon: "E", color: "#7c3aed" },
     { symbol: "USDY", amount: usdyBalance, icon: "U", color: "#f59e0b" },
   ];
@@ -65,7 +65,7 @@ export function OverviewPanel() {
       <div className="flex justify-center mb-6">
         <div className="relative">
           <svg width="152" height="152" viewBox="0 0 152 152">
-            <circle cx="76" cy="76" r="60" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="10" />
+            <circle cx="76" cy="76" r="60" fill="none" stroke="rgba(15,23,42,0.08)" strokeWidth="10" />
             <circle
               cx="76" cy="76" r="60"
               fill="none"
@@ -115,7 +115,7 @@ export function OverviewPanel() {
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             className="flex items-center gap-3 p-3 rounded-xl"
-            style={{ background: "rgba(255,255,255,0.03)" }}
+            style={{ background: "var(--card2-bg)", border: "1px solid var(--b1)" }}
           >
             <div
               className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black text-[var(--color-bg)]"

@@ -29,11 +29,11 @@ const actionIcons: Record<Exclude<ActionType, "all">, React.ReactNode> = {
 };
 
 const actionColors: Record<Exclude<ActionType, "all">, string> = {
-  transfer: "#00d4aa",
-  trade:    "#7c3aed",
-  stake:    "#f59e0b",
-  identity: "#06b6d4",
-  error:    "#ef4444",
+  transfer: "#00E5A8",
+  trade:    "#a78bfa",
+  stake:    "#F59E0B",
+  identity: "#14B8A6",
+  error:    "#EF4444",
   admin:    "#94a3b8",
 };
 
@@ -143,8 +143,8 @@ export function AuditTrailPanel() {
             onClick={() => setFilter(f)}
             className="px-2.5 py-1 rounded-lg text-[10px] font-semibold uppercase tracking-wide transition-all"
             style={{
-              background: filter === f ? (f === "all" ? "rgba(0,212,170,0.15)" : `${actionColors[f as Exclude<ActionType, "all">]}15`) : "rgba(255,255,255,0.04)",
-              border: `1px solid ${filter === f ? (f === "all" ? "rgba(0,212,170,0.3)" : `${actionColors[f as Exclude<ActionType, "all">]}30`) : "rgba(255,255,255,0.06)"}`,
+              background: filter === f ? (f === "all" ? "rgba(0,229,168,0.15)" : `${actionColors[f as Exclude<ActionType, "all">]}15`) : "var(--card2-bg)",
+              border: `1px solid ${filter === f ? (f === "all" ? "rgba(0,229,168,0.3)" : `${actionColors[f as Exclude<ActionType, "all">]}30`) : "var(--b1)"}`,
               color: filter === f ? (f === "all" ? "var(--color-green)" : actionColors[f as Exclude<ActionType, "all">]) : "var(--color-text-muted)",
             }}
           >
@@ -204,7 +204,7 @@ export function AuditTrailPanel() {
 
                 <div
                   className="flex-1 p-2.5 rounded-xl min-w-0"
-                  style={{ background: "rgba(255,255,255,0.02)" }}
+                style={{ background: "var(--card2-bg)", border: "1px solid var(--b1)" }}
                 >
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <div className="text-xs text-[var(--color-text-secondary)] leading-snug flex-1 break-words">

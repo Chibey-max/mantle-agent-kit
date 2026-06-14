@@ -25,13 +25,13 @@ function CountdownTimer({ delayMs, elapsedAtMount }: { delayMs: number; elapsedA
         <span className="text-[var(--color-text-muted)]">Timelock progress</span>
         <span className="font-mono text-[var(--color-green)]">{hours}h {minutes}m remaining</span>
       </div>
-      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
+      <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(15,23,42,0.08)" }}>
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${Math.min(pct, 100)}%` }}
           transition={{ duration: 1 }}
           className="h-full rounded-full"
-          style={{ background: "linear-gradient(90deg, #7c3aed, #00d4aa)" }}
+          style={{ background: "linear-gradient(90deg, #8B5CF6, #00E5A8)" }}
         />
       </div>
     </div>
@@ -48,10 +48,16 @@ export function GuardianControlPanel() {
 
   return (
     <div className="card p-5">
-      <h2 className="font-bold text-white flex items-center gap-2 mb-5">
-        <Shield className="w-4 h-4 text-[var(--color-green)]" />
-        Guardian Controls
-      </h2>
+      <div className="flex items-center justify-between mb-5">
+        <h2 className="font-bold text-white flex items-center gap-2">
+          <Shield className="w-4 h-4 text-[var(--color-green)]" />
+          Guardian System
+        </h2>
+        <span className="status-badge live">
+          <span className="live-dot" />
+          SECURE
+        </span>
+      </div>
 
       {/* Guardian Info */}
       <div
@@ -74,6 +80,20 @@ export function GuardianControlPanel() {
         >
           ACTIVE
         </span>
+      </div>
+
+      {/* Emergency Pause */}
+      <div className="grid grid-cols-3 gap-2 mb-4">
+        {[
+          ["Policy", "ENFORCED"],
+          ["Timelock", "48H"],
+          ["Risk", halted ? "HALTED" : "LOW"],
+        ].map(([label, value]) => (
+          <div key={label} className="rounded-xl p-2.5 text-center" style={{ background: "var(--card2-bg)", border: "1px solid var(--b1)" }}>
+            <div className="text-[9px] uppercase tracking-wide text-[var(--color-text-muted)]">{label}</div>
+            <div className="font-mono text-[11px] font-bold text-[var(--color-text-primary)]">{value}</div>
+          </div>
+        ))}
       </div>
 
       {/* Emergency Pause */}
@@ -158,7 +178,7 @@ export function GuardianControlPanel() {
                   <AlertTriangle className="w-5 h-5 text-red-400" />
                 </div>
                 <div>
-                  <div className="font-bold text-white">Emergency Pause</div>
+              <div className="font-bold text-white">Emergency Pause</div>
                   <div className="text-xs text-[var(--color-text-secondary)]">This will halt all agent activity</div>
                 </div>
               </div>
@@ -177,7 +197,7 @@ export function GuardianControlPanel() {
                   onClick={() => { setHalted(!halted); setShowConfirm(false); }}
                   className="flex-1 py-2.5 rounded-xl text-sm font-bold transition-all bg-red-500 text-white hover:bg-red-600"
                 >
-                  Confirm Pause
+                  {halted ? "Confirm Resume" : "Confirm Pause"}
                 </button>
               </div>
             </motion.div>

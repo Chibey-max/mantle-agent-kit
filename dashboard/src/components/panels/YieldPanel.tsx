@@ -85,8 +85,8 @@ export function YieldPanel() {
       <div
         className="p-4 rounded-2xl mb-4 text-center relative overflow-hidden"
         style={{
-          background: "linear-gradient(135deg, rgba(0,212,170,0.1) 0%, rgba(124,58,237,0.08) 100%)",
-          border: "1px solid rgba(0,212,170,0.2)",
+          background: "linear-gradient(135deg, rgba(0,229,168,0.12) 0%, rgba(139,92,246,0.08) 100%)",
+          border: "1px solid rgba(0,229,168,0.24)",
         }}
       >
         <div
@@ -131,7 +131,7 @@ export function YieldPanel() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="p-3 rounded-xl" style={{ background: "rgba(255,255,255,0.03)" }}>
+        <div className="p-3 rounded-xl" style={{ background: "var(--card2-bg)", border: "1px solid var(--b1)" }}>
           <div className="text-xs text-[var(--color-text-muted)] mb-1">Total Staked</div>
           {isLoading ? (
             <div className="loading-shimmer rounded h-4 w-20" />
@@ -143,7 +143,7 @@ export function YieldPanel() {
             <div className="font-bold text-[var(--color-text-muted)]">—</div>
           )}
         </div>
-        <div className="p-3 rounded-xl" style={{ background: "rgba(255,255,255,0.03)" }}>
+        <div className="p-3 rounded-xl" style={{ background: "var(--card2-bg)", border: "1px solid var(--b1)" }}>
           <div className="text-xs text-[var(--color-text-muted)] mb-1">Exchange Rate</div>
           {isLoading ? (
             <div className="loading-shimmer rounded h-4 w-20" />
@@ -155,13 +155,13 @@ export function YieldPanel() {
             <div className="font-bold text-[var(--color-text-muted)]">—</div>
           )}
         </div>
-        <div className="p-3 rounded-xl" style={{ background: "rgba(255,255,255,0.03)" }}>
+        <div className="p-3 rounded-xl" style={{ background: "var(--card2-bg)", border: "1px solid var(--b1)" }}>
           <div className="text-xs text-[var(--color-text-muted)] mb-1">Est. Daily (1 MNT)</div>
           <div className="font-bold text-[var(--color-green)]">
             +{((currentApy / 100) / 365).toFixed(6)} MNT
           </div>
         </div>
-        <div className="p-3 rounded-xl" style={{ background: "rgba(255,255,255,0.03)" }}>
+        <div className="p-3 rounded-xl" style={{ background: "var(--card2-bg)", border: "1px solid var(--b1)" }}>
           <div className="text-xs text-[var(--color-text-muted)] mb-1">Est. Monthly (1 MNT)</div>
           <div className="font-bold text-white">
             +{((currentApy / 100) / 12).toFixed(4)} MNT
@@ -182,7 +182,7 @@ export function YieldPanel() {
             </defs>
             <XAxis
               dataKey="date"
-              tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 9 }}
+              tick={{ fill: "#94A3B8", fontSize: 9 }}
               axisLine={false}
               tickLine={false}
             />

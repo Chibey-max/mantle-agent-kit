@@ -36,7 +36,7 @@ const POSITIONS = [
 
 export default function TradingPage() {
   return (
-    <div className="min-h-screen px-4 pb-12 max-w-[1600px] mx-auto pt-8">
+    <div className="min-h-screen px-4 pb-12 max-w-[1600px] mx-auto pt-8" style={{ background: "var(--bg)" }}>
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="mb-6">
         <h1 className="text-3xl font-black text-white mb-1">AI Trading Desk</h1>
         <p className="text-sm text-[var(--color-text-secondary)]">
@@ -49,11 +49,10 @@ export default function TradingPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.1 }}
-        className="flex items-center gap-4 p-4 rounded-2xl mb-6"
+        className="card flex items-center gap-4 p-4 mb-6"
         style={{
-          background: "linear-gradient(135deg, rgba(0,212,170,0.1), rgba(0,212,170,0.05))",
-          border: "1px solid rgba(0,212,170,0.25)",
-          boxShadow: "0 0 30px rgba(0,212,170,0.08)",
+          background: "linear-gradient(135deg, rgba(0,229,168,0.12), rgba(255,255,255,0.95))",
+          border: "1px solid rgba(0,229,168,0.25)",
         }}
       >
         <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: "rgba(0,212,170,0.2)" }}>
@@ -96,21 +95,24 @@ export default function TradingPage() {
             </div>
           </div>
 
-          <ResponsiveContainer width="100%" height={300}>
-            <ComposedChart data={PRICE_DATA.slice(-24)} margin={{ top: 4, right: 4, bottom: 4, left: -15 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
-              <XAxis dataKey="time" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 9 }} axisLine={false} tickLine={false} interval={3} />
-              <YAxis domain={["auto", "auto"]} tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v.toFixed(3)}`} />
-              <Tooltip contentStyle={{ background: "var(--color-card)", border: "1px solid var(--color-border)", borderRadius: 8, fontSize: 11 }} />
-              <Bar dataKey="close" fill="#00d4aa" opacity={0.5} radius={[2, 2, 0, 0]} />
-              <Line type="monotone" dataKey="ema9" stroke="#00d4aa" strokeWidth={2} dot={false} name="EMA9" />
-              <Line type="monotone" dataKey="ema21" stroke="#7c3aed" strokeWidth={2} dot={false} strokeDasharray="4 2" name="EMA21" />
-            </ComposedChart>
-          </ResponsiveContainer>
+          <div className="dark-chart p-4">
+            <ResponsiveContainer width="100%" height={300}>
+              <ComposedChart data={PRICE_DATA.slice(-24)} margin={{ top: 4, right: 4, bottom: 4, left: -15 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.055)" />
+                <XAxis dataKey="time" tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 9 }} axisLine={false} tickLine={false} interval={3} />
+                <YAxis domain={["auto", "auto"]} tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 9 }} axisLine={false} tickLine={false} tickFormatter={(v) => `$${v.toFixed(3)}`} />
+                <Tooltip contentStyle={{ background: "#0B1120", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 12, fontSize: 11, color: "white" }} />
+                <Bar dataKey="close" fill="#00E5A8" opacity={0.38} radius={[2, 2, 0, 0]} />
+                <Line type="monotone" dataKey="ema9" stroke="#00E5A8" strokeWidth={2} dot={false} name="EMA9" />
+                <Line type="monotone" dataKey="ema21" stroke="#8B5CF6" strokeWidth={2} dot={false} strokeDasharray="4 2" name="EMA21" />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
 
           {/* RSI Chart */}
           <div className="mt-3">
             <div className="text-xs text-[var(--color-text-muted)] mb-1">RSI (14)</div>
+            <div className="dark-chart p-3">
             <ResponsiveContainer width="100%" height={80}>
               <AreaChart data={RSI_DATA.slice(-24)} margin={{ top: 0, right: 4, bottom: 0, left: -15 }}>
                 <defs>
@@ -119,12 +121,13 @@ export default function TradingPage() {
                     <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <XAxis dataKey="time" tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 8 }} axisLine={false} tickLine={false} interval={3} />
-                <YAxis domain={[0, 100]} tick={{ fill: "rgba(255,255,255,0.3)", fontSize: 8 }} axisLine={false} tickLine={false} ticks={[30, 50, 70]} />
+                <XAxis dataKey="time" tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 8 }} axisLine={false} tickLine={false} interval={3} />
+                <YAxis domain={[0, 100]} tick={{ fill: "rgba(255,255,255,0.35)", fontSize: 8 }} axisLine={false} tickLine={false} ticks={[30, 50, 70]} />
                 <Line type="monotone" dataKey="rsi" stroke="#7c3aed" strokeWidth={1.5} dot={false} />
                 <Area type="monotone" dataKey="rsi" fill="url(#rsiGrad)" stroke="none" />
               </AreaChart>
             </ResponsiveContainer>
+            </div>
             <div className="flex justify-between text-[10px] text-[var(--color-text-muted)] mt-1">
               <span className="text-red-400">Overbought &gt;70</span>
               <span>Neutral 50</span>
@@ -149,7 +152,7 @@ export default function TradingPage() {
                 { label: "Current Daily PnL", value: "+$0.068", ok: true },
                 { label: "Trading Status", value: "ACTIVE", ok: true },
               ].map((item) => (
-                <div key={item.label} className="flex justify-between items-center py-1.5 px-2 rounded-lg" style={{ background: "rgba(255,255,255,0.02)" }}>
+                <div key={item.label} className="flex justify-between items-center py-1.5 px-2 rounded-lg" style={{ background: "var(--card2-bg)", border: "1px solid var(--b1)" }}>
                   <span className="text-[var(--color-text-secondary)]">{item.label}</span>
                   <span className={`font-semibold font-mono ${item.ok ? "text-[var(--color-green)]" : "text-red-400"}`}>{item.value}</span>
                 </div>
