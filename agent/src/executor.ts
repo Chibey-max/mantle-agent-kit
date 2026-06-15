@@ -21,7 +21,7 @@ const VAULT_ABI = parseAbi([
   "function executeStrategy(address target, bytes calldata data, uint256 amount, string calldata strategyName) external returns (bytes)",
   "function openPosition(address token, uint256 size, uint256 entryPrice, bool isLong, string calldata strategy) external returns (bytes32)",
   "function getOpenPositions() external view returns (bytes32[])",
-  "function getPosition(bytes32 positionId) external view returns (tuple(address token, uint256 size, uint256 entryPrice, uint256 openedAt, bool isLong, bool open, string strategy))",
+  "function getPosition(bytes32 positionId) external view returns ((address token, uint256 size, uint256 entryPrice, uint256 openedAt, bool isLong, bool open, string strategy))",
   "function dailyPnl() external view returns (int256)",
   "function tradingHalted() external view returns (bool)",
   "function getVaultBalances() external view returns (uint256 mntBalance, uint256 methBalance)",
@@ -32,6 +32,18 @@ const ERC20_ABI = parseAbi([
   "function decimals() external view returns (uint8)",
 ]);
 
+type TokenPolicy = readonly [bigint, bigint, bigint, bigint, boolean];
+type VaultBalances = readonly [bigint, bigint];
+type VaultPosition = {
+  token: `0x${string}`;
+  size: bigint;
+  entryPrice: bigint;
+  openedAt: bigint;
+  isLong: boolean;
+  open: boolean;
+  strategy: string;
+};
+
 // ─── Tool Executor ─────────────────────────────────────────────────────────────
 
 export type ToolResult =
@@ -40,43 +52,45 @@ export type ToolResult =
 
 export async function executeTool(
   toolName: string,
-  args: Record<string, unknown>
+  args: Record<string, unknown> | null | undefined
 ): Promise<ToolResult> {
+  const toolArgs = args ?? {};
+
   try {
     switch (toolName) {
       case "get_wallet_state":
         return await getWalletState();
       case "transfer_mnt":
-        return await transferMNT(args.to as string, args.amount as string);
+        return await transferMNT(toolArgs.to as string, toolArgs.amount as string);
       case "transfer_token":
         return await transferToken(
-          args.token as string,
-          args.to as string,
-          args.amount as string
+          toolArgs.token as string,
+          toolArgs.to as string,
+          toolArgs.amount as string
         );
       case "get_tx_status":
-        return await getTxStatus(args.txHash as `0x${string}`);
+        return await getTxStatus(toolArgs.txHash as `0x${string}`);
       case "check_limits":
-        return await checkLimits(args.token as string | undefined);
+        return await checkLimits(toolArgs.token as string | undefined);
       case "check_whitelist":
-        return await checkWhitelist(args.address as string);
+        return await checkWhitelist(toolArgs.address as string);
       case "get_agent_identity":
-        return await getAgentIdentity(args.tokenId as number | undefined);
+        return await getAgentIdentity(toolArgs.tokenId as number | undefined);
       case "record_action":
-        return await recordAction(args.action as string, args.txHash as `0x${string}` | undefined);
+        return await recordAction(toolArgs.action as string, toolArgs.txHash as `0x${string}` | undefined);
       case "execute_trade":
         return await executeTrade(
-          args.strategyName as string,
-          args.target as string,
-          args.calldata as string,
-          args.amountMnt as string | undefined
+          toolArgs.strategyName as string,
+          toolArgs.target as string,
+          toolArgs.calldata as string,
+          toolArgs.amountMnt as string | undefined
         );
       case "get_trading_positions":
         return await getTradingPositions();
       case "get_yield_rate":
         return await getYieldRate();
       case "get_transaction_history":
-        return await getTransactionHistory(args.limit as number | undefined);
+        return await getTransactionHistory(toolArgs.limit as number | undefined);
       default:
         return { success: false, error: `Unknown tool: ${toolName}` };
     }
@@ -98,13 +112,13 @@ async function getWalletState(): Promise<ToolResult> {
       abi: WALLET_ABI,
       functionName: "getBalance",
       args: [MANTLE_TOKENS.METH],
-    }),
+    }).catch(() => 0n),
     publicClient.readContract({
       address: walletAddr,
       abi: WALLET_ABI,
       functionName: "getBalance",
       args: [MANTLE_TOKENS.USDY],
-    }),
+    }).catch(() => 0n),
     publicClient.readContract({
       address: walletAddr,
       abi: WALLET_ABI,
@@ -128,7 +142,7 @@ async function getWalletState(): Promise<ToolResult> {
       agentAddress: agentAccount.address,
       identityTokenId: tokenId.toString(),
       chainId: config.CHAIN_ID,
-      network: "Mantle Mainnet",
+      network: "Mantle Sepolia",
     },
   };
 }
@@ -147,8 +161,12 @@ async function transferMNT(to: string, amount: string): Promise<ToolResult> {
 
   const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
 
+  if (receipt.status !== "success") {
+    return { success: false, error: `MNT transfer reverted: ${txHash}` };
+  }
+
   return {
-    success: receipt.status === "success",
+    success: true,
     data: {
       txHash,
       to,
@@ -181,7 +199,7 @@ async function transferToken(
       abi: ERC20_ABI,
       functionName: "decimals",
       args: [],
-    });
+    }) as number;
   } else {
     return { success: false, error: `Unknown token: ${token}` };
   }
@@ -197,8 +215,12 @@ async function transferToken(
 
   const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
 
+  if (receipt.status !== "success") {
+    return { success: false, error: `Token transfer reverted: ${txHash}` };
+  }
+
   return {
-    success: receipt.status === "success",
+    success: true,
     data: { txHash, to, amount, token, gasUsed: receipt.gasUsed.toString() },
   };
 }
@@ -247,21 +269,21 @@ async function checkLimits(token?: string): Promise<ToolResult> {
         abi: WALLET_ABI,
         functionName: "tokenPolicies",
         args: [addr],
-      }),
+      }).catch(() => null),
       publicClient.readContract({
         address: walletAddr,
         abi: WALLET_ABI,
         functionName: "getDailyRemaining",
         args: [addr],
-      }),
-    ]);
+      }).catch(() => 0n),
+    ]) as [TokenPolicy | null, bigint];
 
     results[sym] = {
-      perTxLimit: formatEther(policy[0]),
-      dailyLimit: formatEther(policy[1]),
-      dailySpent: formatEther(policy[2]),
+      perTxLimit: policy ? formatEther(policy[0]) : "0",
+      dailyLimit: policy ? formatEther(policy[1]) : "0",
+      dailySpent: policy ? formatEther(policy[2]) : "0",
       dailyRemaining: formatEther(remaining),
-      enabled: policy[4],
+      enabled: policy ? policy[4] : false,
     };
   }
 
@@ -361,13 +383,16 @@ async function executeTrade(
     abi: VAULT_ABI,
     functionName: "executeStrategy",
     args: [target as `0x${string}`, calldata as `0x${string}`, amount, strategyName],
-    value: amount,
   });
 
   const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
 
+  if (receipt.status !== "success") {
+    return { success: false, error: `Strategy execution reverted: ${txHash}` };
+  }
+
   return {
-    success: receipt.status === "success",
+    success: true,
     data: {
       txHash,
       strategyName,
@@ -408,8 +433,8 @@ async function getTradingPositions(): Promise<ToolResult> {
       abi: VAULT_ABI,
       functionName: "getVaultBalances",
       args: [],
-    }),
-  ]);
+    }).catch(() => [0n, 0n] as VaultBalances),
+  ]) as [`0x${string}`[], bigint, boolean, VaultBalances];
 
   const positions = await Promise.all(
     (positionIds as `0x${string}`[]).map(async (id) => {
@@ -418,7 +443,7 @@ async function getTradingPositions(): Promise<ToolResult> {
         abi: VAULT_ABI,
         functionName: "getPosition",
         args: [id],
-      });
+      }) as VaultPosition;
       return {
         id,
         token: pos.token,
@@ -451,7 +476,7 @@ async function getYieldRate(): Promise<ToolResult> {
   try {
     const response = await fetch("https://meth.mantle.xyz/api/v1/stats").catch(() => null);
     if (response && response.ok) {
-      const data = await response.json();
+      const data = await response.json() as { apy?: string; totalStaked?: string };
       return {
         success: true,
         data: {
@@ -487,7 +512,7 @@ async function getTransactionHistory(limit: number = 10): Promise<ToolResult> {
     const response = await fetch(url).catch(() => null);
 
     if (response && response.ok) {
-      const data = await response.json();
+      const data = await response.json() as { result?: Record<string, string>[] };
       const txs = (data.result || []).slice(0, limit).map((tx: Record<string, string>) => ({
         hash: tx.hash,
         from: tx.from,

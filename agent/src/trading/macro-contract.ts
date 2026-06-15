@@ -13,8 +13,10 @@ const VAULT_ABI = parseAbi([
   "function dailyPnl() external view returns (int256)",
   "function tradingHalted() external view returns (bool)",
   "function getOpenPositions() external view returns (bytes32[])",
-  "function getPosition(bytes32 positionId) external view returns (tuple(address token, uint256 size, uint256 entryPrice, uint256 openedAt, bool isLong, bool open, string strategy))",
+  "function getPosition(bytes32 positionId) external view returns ((address token, uint256 size, uint256 entryPrice, uint256 openedAt, bool isLong, bool open, string strategy))",
 ]);
+
+type VaultBalances = readonly [bigint, bigint];
 
 export interface ExecutionResult {
   executed: boolean;
@@ -44,7 +46,7 @@ export async function executeOnChainTrade(
     abi: VAULT_ABI,
     functionName: "tradingHalted",
     args: [],
-  });
+  }) as boolean;
 
   if (halted) {
     return { executed: false, reason: "Trading halted by vault", size: 0 };
@@ -57,14 +59,14 @@ export async function executeOnChainTrade(
       abi: VAULT_ABI,
       functionName: "getVaultBalances",
       args: [],
-    }),
+    }).catch(() => [0n, 0n] as VaultBalances),
     publicClient.readContract({
       address: vaultAddr,
       abi: VAULT_ABI,
       functionName: "dailyPnl",
       args: [],
     }),
-  ]);
+  ]) as [VaultBalances, bigint];
 
   const mntBalance = parseFloat(formatEther(balances[0]));
   const dailyPnl = parseFloat(formatEther(dailyPnlRaw));
@@ -141,7 +143,7 @@ export async function runTradingCycle(
         abi: VAULT_ABI,
         functionName: "getVaultBalances",
         args: [],
-      });
+      }).catch(() => [0n, 0n] as VaultBalances);
       mntBalance = parseFloat(formatEther(balances[0]));
     }
   } catch {

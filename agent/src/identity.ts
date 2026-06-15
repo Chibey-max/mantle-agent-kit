@@ -1,16 +1,80 @@
 import { publicClient, walletClient, agentAccount } from "./account";
 import { config } from "./env";
-import { parseAbi } from "viem";
 
 // ABI subset for AgentIdentity contract
-const IDENTITY_ABI = parseAbi([
-  "function mintIdentity(address agent, string calldata name, string calldata agentType) external returns (uint256)",
-  "function recordAction(uint256 tokenId, string calldata action, bytes32 txHash) external",
-  "function getIdentity(uint256 tokenId) external view returns (tuple(string name, string agentType, uint256 reputation, uint256 actionCount, uint256 createdAt, uint256 lastActive, address agentAddress, bool active))",
-  "function getRecentActions(uint256 tokenId, uint256 count) external view returns (tuple(string action, bytes32 txHash, uint256 timestamp, bool success)[])",
-  "function agentTokenId(address agent) external view returns (uint256)",
-  "function totalIdentities() external view returns (uint256)",
-]);
+const PROFILE_COMPONENTS = [
+  { name: "name", type: "string" },
+  { name: "agentType", type: "string" },
+  { name: "reputation", type: "uint256" },
+  { name: "actionCount", type: "uint256" },
+  { name: "createdAt", type: "uint256" },
+  { name: "lastActive", type: "uint256" },
+  { name: "agentAddress", type: "address" },
+  { name: "active", type: "bool" },
+] as const;
+
+const ACTION_COMPONENTS = [
+  { name: "action", type: "string" },
+  { name: "txHash", type: "bytes32" },
+  { name: "timestamp", type: "uint256" },
+  { name: "success", type: "bool" },
+] as const;
+
+const IDENTITY_ABI = [
+  {
+    type: "function",
+    name: "mintIdentity",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "agent", type: "address" },
+      { name: "name", type: "string" },
+      { name: "agentType", type: "string" },
+    ],
+    outputs: [{ name: "tokenId", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "recordAction",
+    stateMutability: "nonpayable",
+    inputs: [
+      { name: "tokenId", type: "uint256" },
+      { name: "action", type: "string" },
+      { name: "txHash", type: "bytes32" },
+    ],
+    outputs: [],
+  },
+  {
+    type: "function",
+    name: "getIdentity",
+    stateMutability: "view",
+    inputs: [{ name: "tokenId", type: "uint256" }],
+    outputs: [{ name: "profile", type: "tuple", components: PROFILE_COMPONENTS }],
+  },
+  {
+    type: "function",
+    name: "getRecentActions",
+    stateMutability: "view",
+    inputs: [
+      { name: "tokenId", type: "uint256" },
+      { name: "count", type: "uint256" },
+    ],
+    outputs: [{ name: "actions", type: "tuple[]", components: ACTION_COMPONENTS }],
+  },
+  {
+    type: "function",
+    name: "agentTokenId",
+    stateMutability: "view",
+    inputs: [{ name: "agent", type: "address" }],
+    outputs: [{ name: "tokenId", type: "uint256" }],
+  },
+  {
+    type: "function",
+    name: "totalIdentities",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ name: "count", type: "uint256" }],
+  },
+] as const;
 
 export interface AgentProfile {
   name: string;
@@ -29,6 +93,8 @@ export interface OnChainAction {
   timestamp: bigint;
   success: boolean;
 }
+
+type AgentProfileResult = AgentProfile;
 
 /**
  * Mint a new ERC-8004 identity NFT for the agent
@@ -64,7 +130,7 @@ export async function mintAgentIdentity(
     abi: IDENTITY_ABI,
     functionName: "agentTokenId",
     args: [agentAccount.address],
-  });
+  }) as bigint;
 
   console.log(`[identity] Identity minted successfully. Token ID: ${tokenId}`);
   return { tokenId, txHash };
@@ -111,7 +177,7 @@ export async function getAgentProfile(tokenId: bigint): Promise<AgentProfile> {
     abi: IDENTITY_ABI,
     functionName: "getIdentity",
     args: [tokenId],
-  });
+  }) as AgentProfileResult;
 
   return {
     name: profile.name,
@@ -139,7 +205,7 @@ export async function getAgentTokenId(): Promise<bigint> {
     abi: IDENTITY_ABI,
     functionName: "agentTokenId",
     args: [agentAccount.address],
-  });
+  }) as bigint;
 }
 
 /**
@@ -159,9 +225,9 @@ export async function getRecentActions(
     abi: IDENTITY_ABI,
     functionName: "getRecentActions",
     args: [tokenId, BigInt(count)],
-  });
+  }) as OnChainAction[];
 
-  return actions.map((a) => ({
+  return actions.map((a: OnChainAction) => ({
     action: a.action,
     txHash: a.txHash as `0x${string}`,
     timestamp: a.timestamp,

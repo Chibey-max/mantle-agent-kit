@@ -130,7 +130,7 @@ export function SpendingLimitsPanel() {
   }, []);
 
   const tokens = [
-    { token: "MNT", color: "#00d4aa", address: MANTLE_TOKENS.MNT },
+    { token: "MNT", color: "#00E5A8", address: MANTLE_TOKENS.MNT },
     { token: "mETH", color: "#7c3aed", address: MANTLE_TOKENS.METH },
     { token: "USDY", color: "#f59e0b", address: MANTLE_TOKENS.USDY },
   ];

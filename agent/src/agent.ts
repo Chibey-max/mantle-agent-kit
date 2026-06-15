@@ -48,7 +48,7 @@ function createLLMClient(): { client: OpenAI; model: string; provider: string } 
 
 // ─── System Prompt ────────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `You are an autonomous AI agent wallet running on the Mantle network (Chain ID: 5000).
+const SYSTEM_PROMPT = `You are an autonomous AI agent wallet running on Mantle Sepolia (Chain ID: 5003).
 
 ## Your Identity
 - You operate an on-chain agent wallet (MantleAgentWallet smart contract) on Mantle
@@ -66,7 +66,7 @@ const SYSTEM_PROMPT = `You are an autonomous AI agent wallet running on the Mant
 ## Mantle Network Context
 - MNT: Native token for gas and transfers
 - mETH: Mantle Liquid Staking Token (~4.5% APY) — address: 0xcDA86A272531e8640cD7F1a92c01839911B90bb0
-- USDY: Yield-bearing stablecoin — address: 0x5bE26527e817998A7206475496fDE1E68957c5A9
+- USDY: Yield-bearing stablecoin — address: 0x5be26527e817998A7206475496fDe1E68957C5A9
 - Gas is very cheap on Mantle (L2 optimistic rollup)
 - Block time: ~2 seconds
 
@@ -155,13 +155,19 @@ export async function runAgent(
     iterations++;
     console.log(`[agent] Iteration ${iterations}/${MAX_ITERATIONS}`);
 
-    const response = await llm.client.chat.completions.create({
-      model: llm.model,
-      messages,
-      tools: mcpTools,
-      tool_choice: "auto",
-      temperature: 0.1,
-    });
+    let response: OpenAI.Chat.ChatCompletion;
+    try {
+      response = await llm.client.chat.completions.create({
+        model: llm.model,
+        messages,
+        tools: mcpTools,
+        tool_choice: "auto",
+        temperature: 0.1,
+      });
+    } catch (err) {
+      const detail = err instanceof Error ? err.message : String(err);
+      return `Error: ${llm.provider} request failed (${detail}). Try again or configure a fallback LLM key.`;
+    }
 
     const choice = response.choices[0];
 
@@ -211,7 +217,7 @@ function buildPropertiesFromZod(
   tool: (typeof tools)[keyof typeof tools]
 ): Record<string, unknown> {
   const schema = tool.inputSchema;
-  const shape = (schema as Record<string, unknown>)._def as Record<string, unknown>;
+  const shape = (schema as unknown as Record<string, unknown>)._def as Record<string, unknown>;
 
   if (!shape) return {};
 

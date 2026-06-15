@@ -16,7 +16,7 @@ interface RecentAction {
 
 function ReputationBar({ score }: { score: number }) {
   const pct = (score / 1000) * 100;
-  const color = score >= 800 ? "#00d4aa" : score >= 500 ? "#f59e0b" : "#ef4444";
+  const color = score >= 800 ? "#00E5A8" : score >= 500 ? "#f59e0b" : "#ef4444";
   return (
     <div>
       <div className="flex justify-between text-xs mb-1">
@@ -130,14 +130,14 @@ export function IdentityPanel() {
                 transition={{ duration: 6, repeat: Infinity, ease: "easeInOut" }}
                 className="relative w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0"
                 style={{
-                  background: "linear-gradient(135deg, #7c3aed 0%, #00d4aa 100%)",
+                  background: "linear-gradient(135deg, #7c3aed 0%, #00E5A8 100%)",
                   boxShadow: "0 0 30px rgba(0,212,170,0.3), 0 0 60px rgba(124,58,237,0.2)",
                 }}
               >
                 <Fingerprint className="w-8 h-8 text-white" />
                 <div
                   className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black"
-                  style={{ background: "#00d4aa", color: "#0a0a0f" }}
+                  style={{ background: "#00E5A8", color: "#0a0a0f" }}
                 >
                   #{tokenId}
                 </div>

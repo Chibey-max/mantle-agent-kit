@@ -4,7 +4,7 @@ import { z } from "zod";
 export const MANTLE_TOKENS = {
   MNT: "0x0000000000000000000000000000000000000000" as const, // native
   METH: "0xcDA86A272531e8640cD7F1a92c01839911B90bb0" as const,
-  USDY: "0x5bE26527e817998A7206475496fDE1E68957c5A9" as const,
+  USDY: "0x5be26527e817998A7206475496fDe1E68957C5A9" as const,
 } as const;
 
 export type TokenSymbol = keyof typeof MANTLE_TOKENS;

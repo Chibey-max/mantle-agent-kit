@@ -8,7 +8,7 @@ const TOKENS = [
     symbol: "MNT",
     name: "Mantle Token",
     address: "0x78c1...f4cb8",
-    color: "#00d4aa",
+    color: "#00E5A8",
     icon: "M",
     enabled: true,
     perTx: "1.0 MNT",
@@ -70,7 +70,7 @@ export function TokenPolicyPanel() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
                   <span className="font-semibold text-sm text-white">{token.symbol}</span>
-                  <div className="flex items-center gap-1 text-xs" style={{ color: token.enabled ? "#00d4aa" : "#ef4444" }}>
+                  <div className="flex items-center gap-1 text-xs" style={{ color: token.enabled ? "#00E5A8" : "#ef4444" }}>
                     {token.enabled ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
                     {token.enabled ? "Active" : "Disabled"}
                   </div>
