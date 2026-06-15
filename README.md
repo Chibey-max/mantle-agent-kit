@@ -7,7 +7,7 @@
 [![Deployed on Mantle Sepolia](https://img.shields.io/badge/Deployed-Mantle%20Sepolia-0a0a0a)](https://explorer.sepolia.mantle.xyz)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-**[Live Dashboard](https://dashboard-ten-self-97.vercel.app)** | **[Demo Video](#)** | **[Mantle Sepolia Explorer](https://explorer.sepolia.mantle.xyz)**
+**[Live Dashboard](https://dashboard-ten-self-97.vercel.app)** | **[Mantle Sepolia Explorer](https://explorer.sepolia.mantle.xyz)**
 
 ---
 
@@ -62,7 +62,7 @@ Dashboard → reads events via viem getLogs → shows live audit trail
 | Track 06: Agentic Economy | Byreal Skills CLI | 6 skills: transfer-mnt, swap-agni, swap-merchant-moe, stake-meth, execute-trade, record-action |
 | Track 06: Agentic Economy | ERC-8004 identity | Full implementation with reputation, deactivation, action recording |
 | Track 06: Agentic Economy | Policy enforcement | MantleAgentWallet with per-tx + daily limits + whitelist + guardian |
-| Best UI/UX | Clean, data-first UI | 5-tab dashboard, live stats bar, no glassmorphism, mono data |
+| Best UI/UX | Clean, data-first UI | Premium light/dark dashboard — Space Grotesk + JetBrains Mono, solid cards, dark TradingView-style chart inset, animated Strategy Engine, Agent Terminal with thinking state |
 
 ### Deployed Contracts
 
